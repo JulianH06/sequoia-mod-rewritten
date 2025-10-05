@@ -5,7 +5,6 @@ import com.wynntils.core.components.Handlers;
 import com.wynntils.core.components.Models;
 import com.wynntils.core.components.Services;
 import com.wynntils.models.territories.profile.TerritoryProfile;
-import com.wynntils.screens.maps.AbstractMapScreen;
 import com.wynntils.services.map.MapTexture;
 import com.wynntils.services.map.pois.Poi;
 import com.wynntils.services.map.pois.TerritoryPoi;
@@ -14,11 +13,17 @@ import com.wynntils.utils.mc.KeyboardUtils;
 import com.wynntils.utils.render.MapRenderer;
 import com.wynntils.utils.render.RenderUtils;
 import com.wynntils.utils.type.BoundingBox;
+import com.wynntils.utils.type.BoundingShape;
 import com.wynntils.utils.type.CappedValue;
 import mil.nga.color.Color;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.BufferAllocator;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import star.sequoia2.accessors.RenderUtilAccessor;
@@ -30,7 +35,7 @@ import java.util.*;
 import static com.wynntils.models.territories.type.GuildResource.*;
 import static star.sequoia2.client.SeqClient.mc;
 
-public class BetterGuildMapScreen extends AbstractMapScreen implements RenderUtilAccessor, TextRendererAccessor {
+public class BetterGuildMapScreen extends Screen implements RenderUtilAccessor, TextRendererAccessor {
     enum Roles { TANK, DPS, HEAL }
     enum UiState { OPTED_OUT, CHOOSING_ROLE, CHOSEN_ROLE }
 
@@ -54,6 +59,24 @@ public class BetterGuildMapScreen extends AbstractMapScreen implements RenderUti
     static final float CMD_BTN_SIZE = 42f * SCALE;
     static final float CMD_CORNER = 5f * SCALE;
 
+    static final VertexConsumerProvider.Immediate BUFFER_SOURCE = VertexConsumerProvider.immediate(new BufferAllocator(256));
+
+    float renderWidth;
+    float renderHeight;
+    float renderX;
+    float renderY;
+    float renderedBorderXOffset;
+    float renderedBorderYOffset;
+    float mapWidth;
+    float mapHeight;
+    float centerX;
+    float centerZ;
+    float mapCenterX;
+    float mapCenterZ;
+    float zoomLevel = 60f;
+    float zoomRenderScale = MapRenderer.getZoomRenderScaleFromLevel(60f);
+    Poi hovered;
+
     static class Rect {
         final float x, y, w, h;
         Rect(float x, float y, float w, float h) { this.x = x; this.y = y; this.w = w; this.h = h; }
@@ -72,13 +95,37 @@ public class BetterGuildMapScreen extends AbstractMapScreen implements RenderUti
     boolean commandActive = false;
 
     public BetterGuildMapScreen() {
+        super(Text.literal("Map"));
         roleTextures.put(Roles.TANK, new TexturePair(TextureStorage.tank_active, TextureStorage.tank_inactive));
         roleTextures.put(Roles.DPS, new TexturePair(TextureStorage.damage_active, TextureStorage.damage_inactive));
         roleTextures.put(Roles.HEAL, new TexturePair(TextureStorage.healer_active, TextureStorage.healer_inactive));
     }
 
     @Override
-    public void doRender(DrawContext context, int mouseX, int mouseY, float delta) {
+    protected void init() {
+        renderWidth = this.width;
+        renderHeight = this.height;
+        renderX = 0f;
+        renderY = 0f;
+        renderedBorderXOffset = 0f;
+        renderedBorderYOffset = 0f;
+        mapWidth = renderWidth;
+        mapHeight = renderHeight;
+        centerX = renderX + renderedBorderXOffset + mapWidth / 2f;
+        centerZ = renderY + renderedBorderYOffset + mapHeight / 2f;
+        if (mc.player != null) {
+            mapCenterX = (float) mc.player.getX();
+            mapCenterZ = (float) mc.player.getZ();
+        } else {
+            mapCenterX = -360f;
+            mapCenterZ = -3000f;
+        }
+        zoomRenderScale = MapRenderer.getZoomRenderScaleFromLevel(zoomLevel);
+        hovered = null;
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         RenderSystem.enableDepthTest();
@@ -278,14 +325,14 @@ public class BetterGuildMapScreen extends AbstractMapScreen implements RenderUti
     }
 
     @Override
-    public boolean doMouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT
                     && KeyboardUtils.isShiftDown()
                     && hovered instanceof TerritoryPoi territoryPoi) {
                 Handlers.Command.queueCommand("gu territory " + territoryPoi.getName());
             }
-            return super.doMouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(mouseX, mouseY, button);
         }
 
         float baseX = renderX + renderedBorderXOffset;
@@ -305,7 +352,7 @@ public class BetterGuildMapScreen extends AbstractMapScreen implements RenderUti
                 selectedRole = null;
                 return true;
             }
-            return super.doMouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(mouseX, mouseY, button);
         }
 
         float barWidth = PAD + (BTN_SIZE * 3f) + (BTN_GAP * 2f) + PAD;
@@ -326,7 +373,7 @@ public class BetterGuildMapScreen extends AbstractMapScreen implements RenderUti
             if (out.contains(mouseX, mouseY)) { state = UiState.OPTED_OUT; selectedRole = null; return true; }
         }
 
-        return super.doMouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     protected void renderMap(DrawContext context) {
@@ -403,7 +450,6 @@ public class BetterGuildMapScreen extends AbstractMapScreen implements RenderUti
                 mouseY);
     }
 
-    @Override
     protected void renderPois(
             List<Poi> pois,
             MatrixStack matrixStack,
@@ -456,5 +502,94 @@ public class BetterGuildMapScreen extends AbstractMapScreen implements RenderUti
         }
 
         bufferSource.drawCurrentLayer();
+    }
+
+    protected List<Poi> getRenderedPois(
+            List<Poi> pois,
+            BoundingBox textureBoundingBox,
+            float poiScale,
+            int mouseX,
+            int mouseY) {
+        List<Poi> filteredPois = new ArrayList<>();
+
+        for (int i = pois.size() - 1; i >= 0; --i) {
+            Poi poi = pois.get(i);
+            if (poi.getLocation() != null && poi.isVisible(zoomRenderScale, zoomLevel)) {
+                float poiRenderX = MapRenderer.getRenderX(poi, mapCenterX, centerX, zoomRenderScale);
+                float poiRenderZ = MapRenderer.getRenderZ(poi, mapCenterZ, centerZ, zoomRenderScale);
+                float poiWidth = (float) poi.getWidth(zoomRenderScale, poiScale);
+                float poiHeight = (float) poi.getHeight(zoomRenderScale, poiScale);
+                BoundingBox filterBox = BoundingBox.centered((float) poi.getLocation().getX(), (float) poi.getLocation().getZ(), poiWidth, poiHeight);
+                BoundingBox mouseBox = BoundingBox.centered(poiRenderX, poiRenderZ, poiWidth, poiHeight);
+                if (BoundingShape.intersects(filterBox, textureBoundingBox)) {
+                    filteredPois.add(poi);
+                    if (hovered == null && mouseBox.contains((float) mouseX, (float) mouseY)) {
+                        hovered = poi;
+                    }
+                }
+            }
+        }
+
+        if (hovered != null) {
+            filteredPois.remove(hovered);
+            filteredPois.add(0, hovered);
+        }
+
+        return filteredPois;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        adjustZoomLevel((float)(2.0F * deltaY));
+        return true;
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) {
+            this.close();
+            return true;
+        } else if (keyCode != 61 && keyCode != 334) {
+            if (keyCode != 45 && keyCode != 333) {
+                InputUtil.Key key = InputUtil.fromKeyCode(keyCode, scanCode);
+                KeyBinding.setKeyPressed(key, true);
+                return false;
+            } else {
+                adjustZoomLevel(-2.0F);
+                return true;
+            }
+        } else {
+            adjustZoomLevel(2.0F);
+            return true;
+        }
+    }
+
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        InputUtil.Key key = InputUtil.fromKeyCode(keyCode, scanCode);
+        KeyBinding.setKeyPressed(key, false);
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button == 0 && mouseX >= (double)this.renderX && mouseX <= (double)(this.renderX + this.renderWidth) && mouseY >= (double)this.renderY && mouseY <= (double)(this.renderY + this.renderHeight)) {
+            this.updateMapCenter((float)((double)this.mapCenterX - dragX / (double)this.zoomRenderScale), (float)((double)this.mapCenterZ - dragY / (double)this.zoomRenderScale));
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    protected void setZoomLevel(float zoomLevel) {
+        this.zoomLevel = Math.max(1.0F, Math.min(100.0F, zoomLevel));
+        this.zoomRenderScale = MapRenderer.getZoomRenderScaleFromLevel(this.zoomLevel);
+    }
+
+    private void adjustZoomLevel(float delta) {
+        this.setZoomLevel(this.zoomLevel + delta);
+    }
+
+    protected void updateMapCenter(float newX, float newZ) {
+        this.mapCenterX = newX;
+        this.mapCenterZ = newZ;
     }
 }
