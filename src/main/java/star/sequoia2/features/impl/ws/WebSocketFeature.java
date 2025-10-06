@@ -113,6 +113,7 @@ public class WebSocketFeature extends ToggleFeature {
                         case S_BINARY_DATA -> new SBinaryDataWSMessageHandler(s).handle();
                         case S_COMMAND_RESULT -> new SCommandResultWSMessageHandler(s).handle();
                         case S_REWARD_DATA -> new SRewardWSMessageHandler(s).handle();
+                        case S_WAR_CMD -> new SWarCmdWSMessageHandler(s).handle();
                         default -> SeqClient.warn("Unhandled WebSocket message type: " + wsMessageType);
                     }
                 } catch (Exception exception) {

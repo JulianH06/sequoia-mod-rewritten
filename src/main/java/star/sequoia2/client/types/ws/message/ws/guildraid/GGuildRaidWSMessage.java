@@ -1,7 +1,6 @@
-package star.sequoia2.client.types.ws.message.ws;
+package star.sequoia2.client.types.ws.message.ws.guildraid;
 
 import star.sequoia2.client.types.ws.message.WSMessage;
-import star.sequoia2.client.types.ws.message.ws.guildraid.GuildRaid;
 import star.sequoia2.client.types.ws.type.WSMessageType;
 
 import static star.sequoia2.client.types.ws.WSConstants.GSON;

@@ -4,7 +4,7 @@ import com.wynntils.utils.mc.McUtils;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
-import star.sequoia2.client.types.ws.message.ws.GGuildRaidWSMessage;
+import star.sequoia2.client.types.ws.message.ws.guildraid.GGuildRaidWSMessage;
 import star.sequoia2.client.types.ws.message.ws.guildraid.GuildRaid;
 import star.sequoia2.client.types.ws.message.ws.guildraid.RaidType;
 import star.sequoia2.events.RaidCompleteFromChatEvent;
