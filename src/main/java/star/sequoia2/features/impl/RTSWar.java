@@ -1,7 +1,10 @@
 package star.sequoia2.features.impl;
 
 import com.collarmc.pounce.Subscribe;
+import com.ibm.icu.impl.Pair;
 import com.wynntils.utils.mc.McUtils;
+import lombok.Getter;
+import lombok.Setter;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.message.ws.GTreasuryEmeraldAlertWSMessage;
 import star.sequoia2.client.types.ws.message.ws.guildraid.GGuildRaidWSMessage;
@@ -20,10 +23,13 @@ import java.util.Map;
 
 import static star.sequoia2.client.SeqClient.mc;
 
+@Setter
+@Getter
 public class RTSWar extends Feature {
 
     boolean commander;
     boolean optedIn;
+    Pair<String, String> currentTeam;
     int role;
 
     List<WarCommand> commandQue = new ArrayList<>();
