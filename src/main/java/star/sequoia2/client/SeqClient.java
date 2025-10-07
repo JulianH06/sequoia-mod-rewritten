@@ -166,6 +166,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     private void registerFeatures() {
         features.add(new Settings()); // always first so you can get colors
         features.add(new SorrowTracker());
+        features.add(new TeleportIndicator());
         features.add(new PartyHealthDisplay());
         features.add(new ChatHookFeature());
         features.add(new DiscordChatBridgeFeature());
