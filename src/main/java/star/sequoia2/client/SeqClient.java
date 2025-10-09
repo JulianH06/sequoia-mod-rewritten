@@ -111,7 +111,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
         try {
             configuration = new Configuration();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalStateException("could not read configuration", e);
         }
 
@@ -140,7 +140,11 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         subscribe(settings);
         registerFeatures();
 
-        settings.load(features);
+        try {
+            settings.load(features);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
 
         ClientCommandRegistrationCallback.EVENT.register(Commands::registerCommands);
 
