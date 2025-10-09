@@ -39,8 +39,11 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
     private static final int GUILD_REWARDS_ITEM_SLOT = 27;
     private static final Pattern GUILD_REWARDS_EMERALDS_PATTERN = Pattern.compile("^§aEmeralds: §f(\\d+)§7/(\\d+)$");
     private static final Pattern GUILD_REWARDS_TOMES_PATTERN = Pattern.compile("^§5Guild Tomes: §f(\\d+)§7/(\\d+)$");
-    private static final Pattern GUILD_REWARDS_ASPECTS_PATTERN =
-            Pattern.compile("^§#d6401effAspects: §f(\\d+)§7/(\\d+)$");
+    private static final Pattern GUILD_REWARDS_ASPECTS_PATTERN = Pattern.compile("^§#d6401effAspects: §f(\\d+)§7/(\\d+)$");
+
+    private static final Pattern OVERFLOW_GUILD_REWARDS_EMERALDS_PATTERN = Pattern.compile("^§aEmeralds: §c(\\d+)§7/(\\d+)$");
+    private static final Pattern OVERFLOW_GUILD_REWARDS_TOMES_PATTERN = Pattern.compile("^§5Guild Tomes: §c(\\d+)§7/(\\d+)$");
+    private static final Pattern OVERFLOW_GUILD_REWARDS_ASPECTS_PATTERN = Pattern.compile("^§#d6401effAspects: §c(\\d+)§7/(\\d+)$");
     public GuildRewardTrackingFeature() {
         super("GuildRewardTrackingFeature", "Tracks and notifies when guild rewards are over a certain point.");
     }
@@ -173,6 +176,9 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
             Matcher emeraldsMatcher = GUILD_REWARDS_EMERALDS_PATTERN.matcher(loreLine.getString());
             Matcher tomesMatcher = GUILD_REWARDS_TOMES_PATTERN.matcher(loreLine.getString());
             Matcher aspectsMatcher = GUILD_REWARDS_ASPECTS_PATTERN.matcher(loreLine.getString());
+            Matcher OemeraldsMatcher = OVERFLOW_GUILD_REWARDS_EMERALDS_PATTERN.matcher(loreLine.getString());
+            Matcher OtomesMatcher = OVERFLOW_GUILD_REWARDS_TOMES_PATTERN.matcher(loreLine.getString());
+            Matcher OaspectsMatcher = OVERFLOW_GUILD_REWARDS_ASPECTS_PATTERN.matcher(loreLine.getString());
             if (emeraldsMatcher.matches()) {
                 int emeralds = Integer.parseInt(emeraldsMatcher.group(1));
                 int emeraldsMax = Integer.parseInt(emeraldsMatcher.group(2));
@@ -186,6 +192,22 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
             } else if (tomesMatcher.matches()) {
                 int tomes = Integer.parseInt(tomesMatcher.group(1));
                 int tomesMax = Integer.parseInt(tomesMatcher.group(2));
+                SeqClient.debug("Tomes found: " + tomes);
+                rewardStorage.put(GuildRewardType.TOME, Pair.of(tomes, tomesMax));
+            }
+            if (OemeraldsMatcher.matches()) {
+                int emeralds = Integer.parseInt(OemeraldsMatcher.group(1));
+                int emeraldsMax = Integer.parseInt(OemeraldsMatcher.group(2));
+                SeqClient.debug("Emeralds found: " + emeralds);
+                rewardStorage.put(GuildRewardType.EMERALD, Pair.of(emeralds, emeraldsMax));
+            } else if (OaspectsMatcher.matches()) {
+                int aspects = Integer.parseInt(OaspectsMatcher.group(1));
+                int aspectsMax = Integer.parseInt(OaspectsMatcher.group(2));
+                SeqClient.debug("Aspects found: " + aspects);
+                rewardStorage.put(GuildRewardType.ASPECT, Pair.of(aspects, aspectsMax));
+            } else if (OtomesMatcher.matches()) {
+                int tomes = Integer.parseInt(OtomesMatcher.group(1));
+                int tomesMax = Integer.parseInt(OtomesMatcher.group(2));
                 SeqClient.debug("Tomes found: " + tomes);
                 rewardStorage.put(GuildRewardType.TOME, Pair.of(tomes, tomesMax));
             }
