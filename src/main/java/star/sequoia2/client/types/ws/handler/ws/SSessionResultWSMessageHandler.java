@@ -10,7 +10,7 @@ import star.sequoia2.utils.AccessTokenManager;
 
 import java.util.regex.Pattern;
 
-import static star.sequoia2.client.commands.DisconnectCommand.deleteToken;
+import static star.sequoia2.client.commands.SeqDisconnectCommand.deleteToken;
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
 

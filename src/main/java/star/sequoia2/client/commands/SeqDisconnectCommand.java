@@ -6,7 +6,6 @@ import com.mojang.brigadier.tree.CommandNode;
 import com.wynntils.core.components.Managers;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
@@ -24,10 +23,10 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.arg
 import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.utils.AccessTokenManager.invalidateAccessToken;
 
-public class DisconnectCommand extends Command implements FeaturesAccessor {
+public class SeqDisconnectCommand extends Command implements FeaturesAccessor {
     @Override
     public String getCommandName() {
-        return "disconnect";
+        return "seqdisconnect";
     }
 
     @Override
@@ -115,7 +114,7 @@ public class DisconnectCommand extends Command implements FeaturesAccessor {
     private int auth(CommandContext<FabricClientCommandSource> ctx) {
         sorter(ctx);
 
-        if (Objects.equals(ctx.getInput(), "disconnect deletetoken")) {
+        if (Objects.equals(ctx.getInput(), "seqdisconnect deletetoken")) {
             deleteToken(ctx);
         }
         return 1;

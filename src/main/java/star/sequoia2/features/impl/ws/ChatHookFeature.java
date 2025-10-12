@@ -89,7 +89,7 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
             if (features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getConnectOnJoin().get()).orElse(false)
                     && !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
                     && mc.player != null) {
-                mc.player.networkHandler.sendCommand("connect");
+                mc.player.networkHandler.sendCommand("seqconnect");
             }
             return;
         }

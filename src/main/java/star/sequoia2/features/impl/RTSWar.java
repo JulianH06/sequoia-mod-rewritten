@@ -2,15 +2,13 @@ package star.sequoia2.features.impl;
 
 import com.collarmc.pounce.Subscribe;
 import com.ibm.icu.impl.Pair;
-import com.wynntils.utils.mc.McUtils;
 import lombok.Getter;
 import lombok.Setter;
-import star.sequoia2.client.SeqClient;
-import star.sequoia2.client.types.ws.message.ws.GTreasuryEmeraldAlertWSMessage;
-import star.sequoia2.client.types.ws.message.ws.guildraid.GGuildRaidWSMessage;
+import star.sequoia2.client.types.ws.message.ws.GIC3HWSMessage;
 import star.sequoia2.client.types.ws.message.ws.rts.GWarCmdWSMessage;
+import star.sequoia2.events.PlayerTickEvent;
 import star.sequoia2.events.input.KeyEvent;
-import star.sequoia2.features.Feature;
+import star.sequoia2.features.ToggleFeature;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.gui.screen.BetterGuildMapScreen;
 import star.sequoia2.settings.Binding;
@@ -25,12 +23,14 @@ import static star.sequoia2.client.SeqClient.mc;
 
 @Setter
 @Getter
-public class RTSWar extends Feature {
+public class RTSWar extends ToggleFeature {
 
     boolean commander;
     boolean optedIn;
     Pair<String, String> currentTeam;
     int role;
+
+    boolean sendingLocation;
 
     List<WarCommand> commandQue = new ArrayList<>();
     Map<String, List<String>> teams = new HashMap<>();
@@ -39,6 +39,34 @@ public class RTSWar extends Feature {
 
     public RTSWar() {
         super("RTSWar", "Replaces wynntils guild map for an improved RTS one");
+    }
+
+    @Override
+    public void onActivate() {
+        sendingLocation = true;
+    }
+
+    @Override
+    public void onDeactivate() {
+        sendingLocation = false;
+    }
+
+    @Subscribe
+    public void onTick(PlayerTickEvent event) { //ignore doesnt trigger if u dont hve featuyre enabled
+        int[] ints = {1,2,3};
+        GIC3HWSMessage message = new GIC3HWSMessage(
+                new GIC3HWSMessage.Data(
+                        1,
+                        1,
+                        "method",
+                        ints,
+                        List.of("test","test")
+                )
+        );
+
+        if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false) || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)) {
+            features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(message));
+        }
     }
 
     @Subscribe

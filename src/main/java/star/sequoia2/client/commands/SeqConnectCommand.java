@@ -6,7 +6,6 @@ import com.mojang.brigadier.tree.CommandNode;
 import com.wynntils.core.components.Managers;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import star.sequoia2.accessors.FeaturesAccessor;
@@ -17,10 +16,10 @@ import star.sequoia2.utils.wynn.WynnUtils;
 
 import static star.sequoia2.client.SeqClient.mc;
 
-public class ConnectCommand extends Command implements FeaturesAccessor {
+public class SeqConnectCommand extends Command implements FeaturesAccessor {
     @Override
     public String getCommandName() {
-        return "connect";
+        return "seqconnect";
     }
 
     @Override
