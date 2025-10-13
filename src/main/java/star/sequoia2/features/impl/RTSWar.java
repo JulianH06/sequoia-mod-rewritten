@@ -4,8 +4,10 @@ import com.collarmc.pounce.Subscribe;
 import com.ibm.icu.impl.Pair;
 import lombok.Getter;
 import lombok.Setter;
+import net.minecraft.util.math.BlockPos;
 import star.sequoia2.client.types.ws.message.ws.GIC3HWSMessage;
 import star.sequoia2.client.types.ws.message.ws.rts.GWarCmdWSMessage;
+import star.sequoia2.client.types.ws.type.PosCodec;
 import star.sequoia2.events.PlayerTickEvent;
 import star.sequoia2.events.input.KeyEvent;
 import star.sequoia2.features.ToggleFeature;
@@ -53,14 +55,14 @@ public class RTSWar extends ToggleFeature {
 
     @Subscribe
     public void onTick(PlayerTickEvent event) { //ignore doesnt trigger if u dont hve featuyre enabled
-        int[] ints = {1,2,3};
+        int[] ints = PosCodec.encode(List.of(new BlockPos(123, 56, 512)));
         GIC3HWSMessage message = new GIC3HWSMessage(
                 new GIC3HWSMessage.Data(
-                        1,
-                        1,
-                        "method",
+                        0,
+                        0,
+                        "position",
                         ints,
-                        List.of("test","test")
+                        List.of("theoplegends")
                 )
         );
 
