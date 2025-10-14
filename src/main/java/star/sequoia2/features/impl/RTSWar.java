@@ -74,7 +74,7 @@ public class RTSWar extends ToggleFeature {
                                     0,
                                     "position",
                                     ints,
-                                    List.of("theoplegends")
+                                    List.of("*")
                             )
                     );
                     features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(message));
