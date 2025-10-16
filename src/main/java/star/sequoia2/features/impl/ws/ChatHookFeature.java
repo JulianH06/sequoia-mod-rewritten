@@ -4,17 +4,19 @@ import com.collarmc.pounce.Subscribe;
 import com.wynntils.core.text.StyledText;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
+import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.GuildParserAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.events.ChatMessageEvent;
+import star.sequoia2.events.WynncraftLoginEvent;
 import star.sequoia2.features.ToggleFeature;
 
 import java.util.regex.Pattern;
 
 import static star.sequoia2.client.SeqClient.mc;
 
-public class ChatHookFeature extends ToggleFeature implements GuildParserAccessor, TeXParserAccessor {
+public class ChatHookFeature extends ToggleFeature implements GuildParserAccessor, TeXParserAccessor, EventBusAccessor {
 
     public ChatHookFeature() {
         super("ChatHook", "Chat related stuffs (type shi)", true);
@@ -86,6 +88,7 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
 
         if (AUTO_CONNECT.matcher(tex).find()) {
             SeqClient.debug("parsing as login...");
+            dispatch(new WynncraftLoginEvent());
             if (features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getConnectOnJoin().get()).orElse(false)
                     && !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
                     && mc.player != null) {
@@ -95,7 +98,7 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
         }
 
         if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)
-                || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
+                        || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
                 || !features().getIfActive(ChatHookFeature.class).map(ChatHookFeature::isActive).orElse(false)) {
             return;
         }
