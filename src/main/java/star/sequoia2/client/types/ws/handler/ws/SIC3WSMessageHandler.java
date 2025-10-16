@@ -1,16 +1,18 @@
 package star.sequoia2.client.types.ws.handler.ws;
 
 import net.minecraft.util.math.BlockPos;
+import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.handler.WSMessageHandler;
 import star.sequoia2.client.types.ws.message.ws.SIC3DataWSMessage;
 import star.sequoia2.client.types.ws.type.PosCodec;
+import star.sequoia2.features.impl.RTSWar;
 
 import java.util.List;
 
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
-public class SIC3WSMessageHandler extends WSMessageHandler {
+public class SIC3WSMessageHandler extends WSMessageHandler implements FeaturesAccessor {
     public SIC3WSMessageHandler(String message) {
         super(GSON.fromJson(message, SIC3DataWSMessage.class), message);
     }
@@ -21,10 +23,14 @@ public class SIC3WSMessageHandler extends WSMessageHandler {
         SIC3DataWSMessage.Data data = sic3DataWSMessage.getChatMessage();
 
         List<BlockPos> blocks = PosCodec.decode(data.payload());
-
+        String player = data.origin();
 
         if (data.method().equals("position")) {
-            SeqClient.info("Received Position data: " + blocks.getFirst());
+            if (!blocks.isEmpty()) {
+                BlockPos pos = blocks.getFirst();
+                features().getIfActive(RTSWar.class).ifPresent(rtsWar -> rtsWar.updateRemotePlayer(player, pos));
+                SeqClient.info("Received Position data: " + pos);
+            }
         }
     }
 }

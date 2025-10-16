@@ -13,21 +13,26 @@ import com.wynntils.utils.type.BoundingBox;
 import com.wynntils.utils.type.BoundingShape;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
+import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.RenderUtilAccessor;
 import star.sequoia2.accessors.TextRendererAccessor;
+import star.sequoia2.client.types.ws.type.PlayerSkinCache;
+import star.sequoia2.features.impl.RTSWar;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static star.sequoia2.client.SeqClient.mc;
 
-public class BetterGuildMapScreen extends Screen implements RenderUtilAccessor, TextRendererAccessor {
+public class RTSGuildMapScreen extends Screen implements RenderUtilAccessor, TextRendererAccessor, FeaturesAccessor {
 
     static final VertexConsumerProvider.Immediate BUFFER_SOURCE = VertexConsumerProvider.immediate(new BufferAllocator(256));
 
@@ -35,7 +40,7 @@ public class BetterGuildMapScreen extends Screen implements RenderUtilAccessor, 
     float zoomLevel = 60f, zoomRenderScale = MapRenderer.getZoomRenderScaleFromLevel(60f);
     Poi hovered;
 
-    public BetterGuildMapScreen() {
+    public RTSGuildMapScreen() {
         super(Text.literal("Map"));
     }
 
@@ -70,6 +75,7 @@ public class BetterGuildMapScreen extends Screen implements RenderUtilAccessor, 
 
         render2DUtil().enableScissor((int)(renderX + renderedBorderXOffset), (int)(renderY + renderedBorderYOffset), (int)(renderX + renderedBorderXOffset + mapWidth), (int)(renderY + renderedBorderYOffset + mapHeight));
         renderPois(context.getMatrices(), mouseX, mouseY);
+        renderRemotePlayers(context);
         render2DUtil().disableScissor();
 
         RenderSystem.enableDepthTest();
@@ -216,4 +222,28 @@ public class BetterGuildMapScreen extends Screen implements RenderUtilAccessor, 
     private void adjustZoomLevel(float delta) { this.setZoomLevel(this.zoomLevel + delta); }
 
     protected void updateMapCenter(float newX, float newZ) { this.mapCenterX = newX; this.mapCenterZ = newZ; }
+
+    private void renderRemotePlayers(DrawContext context) {
+        context.getMatrices().translate(0,0,200);
+        features().getIfActive(RTSWar.class).ifPresent(rts -> {
+            var players = rts.getActiveRemotePlayers();
+            if (players.isEmpty()) return;
+
+            for (RTSWar.TrackedPlayer p : players) {
+                float x = centerX + ((float) p.pos.getX() - mapCenterX) * zoomRenderScale;
+                float z = centerZ + ((float) p.pos.getZ() - mapCenterZ) * zoomRenderScale;
+
+                int scale = 2;
+                int size = 8 * scale;
+                int texSize = 64 * scale;
+                int sx = (int) (x - size / 2f);
+                int sz = (int) (z - size / 2f);
+
+                Identifier skin = PlayerSkinCache.get(p.uuid);
+                context.drawTexture(RenderLayer::getGuiTextured, skin, sx, sz, 8 * scale, 8 * scale, size, size, texSize, texSize);
+                context.drawTexture(RenderLayer::getGuiTextured, skin, sx, sz, 40 * scale, 8 * scale, size, size, texSize, texSize);
+            }
+        });
+    }
+
 }
