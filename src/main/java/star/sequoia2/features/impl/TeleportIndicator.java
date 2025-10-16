@@ -3,7 +3,6 @@ package star.sequoia2.features.impl;
 import com.collarmc.pounce.Subscribe;
 import com.wynntils.core.text.StyledText;
 import com.wynntils.utils.mc.LoreUtils;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.hit.BlockHitResult;
@@ -30,21 +29,11 @@ public class TeleportIndicator extends ToggleFeature implements RenderUtilAccess
     }
 
     public Class currentClass = Class.Else;
+    double max = 0;
 
     @Subscribe
     public void onRender3D(Render3DEvent event) {
-        double max = 0;
-        if (currentClass.equals(Class.Mage)){
-            max =mageRange.get();
-        }
-        if (currentClass.equals(Class.Shaman)){
-            max = shamanRange.get();
-        }
-        if (currentClass.equals(Class.Else)){
-            max = -1;
-        }
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc == null || mc.player == null || mc.world == null || max ==-1) return;
+        if (mc == null || mc.player == null || mc.world == null || max == -1) return;
         float tickDelta = event.delta();
         Vec3d start = mc.player.getCameraPosVec(tickDelta);
         Vec3d look = mc.player.getRotationVec(tickDelta);
@@ -65,15 +54,18 @@ public class TeleportIndicator extends ToggleFeature implements RenderUtilAccess
     public void onWynncraftJoin(WynncraftLoginEvent event){
         mc.execute(()->{
             currentClass = Class.Else;
+            max = -1;
             if (mc.player.getMainHandStack()!= null){
                 ItemStack item = mc.player.getMainHandStack();
                 if (item.getItem() != null && item.getItem().equals(Items.POTION)){
                     for (StyledText loreLine : LoreUtils.getLore(item)) {
                         if (loreLine.getString().contains("§a✔§7 Class Req: Mage/Dark Wizard")){
                             currentClass = Class.Mage;
+                            max = mageRange.get();
                         }
                         if (loreLine.getString().contains("§a✔§7 Class Req: Shaman/Skyseer")){
                             currentClass = Class.Shaman;
+                            max = shamanRange.get();
                         }
 
                     }
