@@ -58,7 +58,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     public static boolean initialized = false;
 
     //enable and compile for testers
-    public static boolean testMode = false;
+    public static boolean testMode = true;
 
     public static boolean debugMode = true;
 
@@ -177,7 +177,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         features.add(new WebSocketFeature());
         features.add(new EcoMessageFilter());
         features.add(new GuildRewardTrackingFeature());
-        features.add(new RTSWar());
+//        features.add(new RTSWar());
         //TODO: finish commented out features.
     }
 

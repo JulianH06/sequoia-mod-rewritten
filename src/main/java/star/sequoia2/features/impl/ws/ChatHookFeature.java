@@ -2,16 +2,20 @@ package star.sequoia2.features.impl.ws;
 
 import com.collarmc.pounce.Subscribe;
 import com.wynntils.core.text.StyledText;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.network.packet.s2c.play.ChatMessageS2CPacket;
+import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.text.Text;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.GuildParserAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
-import star.sequoia2.events.ChatMessageEvent;
+import star.sequoia2.events.PacketEvent;
 import star.sequoia2.events.WynncraftLoginEvent;
 import star.sequoia2.features.ToggleFeature;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import static star.sequoia2.client.SeqClient.mc;
@@ -76,15 +80,25 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
     private static final Pattern AUTO_CONNECT =
             Pattern.compile("§6§lWelcome to Wynncraft!");
 
+    private static final int   CACHE_SIZE    = 256;
+    private static final long  DUP_WINDOW_MS = 1000L;
+
+    private static final Map<Integer, Long> SEQ$RECENT =
+            Collections.synchronizedMap(new LinkedHashMap<Integer, Long>(CACHE_SIZE, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Integer, Long> eldest) {
+                    return size() > CACHE_SIZE;
+                }
+            });
+
     @Subscribe
-    public void onChatMessage(ChatMessageEvent event) {
-        Text message = event.message();
-//            "[12:12:02] [Render thread/INFO] (sequoia2) [VERBOSE] [CHAT] §b\uDAFF\uDFFC\uE006\uDAFF\uDFFF\uE002\uDAFF\uDFFE §ebad_and_sad§b, §eMasss§b, §e§owar tank§b, and §e§oTotal Obliteration§b finished §3The Nameless §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Anomaly§b and claimed §32x Aspects§b, §32048x §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Emeralds§b, and §3+10367m Guild Experience\n"
-        StyledText styledText = StyledText.fromComponent(message);
+    public void onChatMessage(PacketEvent.PacketReceiveEvent event) {
+        if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
+        if (content == null || overlay) return;
+        if (seq$shouldDrop(content)) return;
 
+        StyledText styledText = StyledText.fromComponent(content);
         String tex = teXParser().toTeX(styledText.stripAlignment());
-
-        SeqClient.debug(tex);
 
         if (AUTO_CONNECT.matcher(tex).find()) {
             SeqClient.debug("parsing as login...");
@@ -98,7 +112,7 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
         }
 
         if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)
-                        || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
+                || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
                 || !features().getIfActive(ChatHookFeature.class).map(ChatHookFeature::isActive).orElse(false)) {
             return;
         }
@@ -111,8 +125,7 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
             return;
         }
 
-        tex = remove_multiline(tex); // cleaned tex for variable multiline texts like guild raids
-//            Sequoia2.debug(String.format("cleaned tex: %s", tex));
+        tex = remove_multiline(tex);
 
         if (GUILD_RAID_BLOCK.matcher(tex).find() || OTHER_GUILD_RAID_BLOCK.matcher(tex).find()) {
             SeqClient.debug("parsing as guild raid completion...");
@@ -120,20 +133,29 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
         }
     }
 
+    private static String getString(ChatMessageS2CPacket messagePacket) {
+        Text message = messagePacket.unsignedContent();
+//            "[12:12:02] [Render thread/INFO] (sequoia2) [VERBOSE] [CHAT] §b\uDAFF\uDFFC\uE006\uDAFF\uDFFF\uE002\uDAFF\uDFFE §ebad_and_sad§b, §eMasss§b, §e§owar tank§b, and §e§oTotal Obliteration§b finished §3The Nameless §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Anomaly§b and claimed §32x Aspects§b, §32048x §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Emeralds§b, and §3+10367m Guild Experience\n"
+//            StyledText styledText = StyledText.fromComponent(message);
+//
+//            String tex = teXParser().toTeX(styledText.stripAlignment());
+//
+
+        String tex = message.toString();
+        return tex;
+    }
+
     private static final Pattern SECTION_CODES =
             Pattern.compile("§[0-9a-fk-or<>]", Pattern.CASE_INSENSITIVE);
-
 
     public static String remove_multiline(String s) {
         if (s == null || s.isEmpty()) return "";
         s = s.replaceAll("§.\uE001§.", "").trim();
-        // strip private codepoints
         StringBuilder out = new StringBuilder(s.length());
         s.codePoints().forEach(cp -> {
             if (Character.getType(cp) != Character.PRIVATE_USE) out.appendCodePoint(cp);
         });
         s = out.toString();
-        // normalize all whitespace (including single \n) to a single space also remove end of line formats
         s = s.replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
         return s;
     }
@@ -145,5 +167,23 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
     public static String clean(String s) {
         if (s == null || s.isEmpty()) return "";
         return remove_formatting(remove_multiline(s));
+    }
+
+    private static int seq$keyFrom(Text msg) {
+        String s = msg.getString().replaceAll("\\s+", " ").trim();
+        return s.hashCode();
+    }
+
+    private static boolean seq$shouldDrop(Text msg) {
+        long now = System.currentTimeMillis();
+        int key = seq$keyFrom(msg);
+        synchronized (SEQ$RECENT) {
+            Long last = SEQ$RECENT.get(key);
+            if (last != null && (now - last) <= DUP_WINDOW_MS) {
+                return true;
+            }
+            SEQ$RECENT.put(key, now);
+        }
+        return false;
     }
 }
