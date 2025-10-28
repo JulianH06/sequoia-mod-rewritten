@@ -24,7 +24,7 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
     // \hover{<hoverText>}{<visible>}
     private static final Pattern HOVER = Pattern.compile("\\\\hover\\{([^}]*)}\\{([^}]*)}");
     // "<nick>'s real name is <user>"
-    private static final Pattern REALNAME = Pattern.compile("(?i)(.*?)'?s\\s+real\\s+name\\s+is\\s+(.*)");
+    private static final Pattern REALNAME = Pattern.compile("(?i)(.*?)['’]s?\\s+real\\s+name\\s+is\\s+(.+)");
 
     // finished <raid name> and claimed ...
     private static final Pattern RAID_NAME = Pattern.compile("(?i)finished\\s+(.*?)\\s+and\\s+claimed");
