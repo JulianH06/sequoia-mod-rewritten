@@ -58,7 +58,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     public static boolean initialized = false;
 
     //enable and compile for testers
-    public static boolean testMode = true;
+    public static boolean testMode = false;
 
     public static boolean debugMode = true;
 
