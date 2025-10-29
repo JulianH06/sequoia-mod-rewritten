@@ -76,7 +76,7 @@ public class GuildMessageParser implements FeaturesAccessor {
                             nickname,
                             guildMsg,
                             TimeUtils.wsTimestamp(),
-                            mc.player.getName().toString()
+                            mc.player.getName().getString()
                     )
             );
             features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(payload));

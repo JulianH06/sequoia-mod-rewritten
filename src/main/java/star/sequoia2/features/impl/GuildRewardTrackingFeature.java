@@ -70,7 +70,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
                     GTreasuryEmeraldAlertWSMessage payload = new GTreasuryEmeraldAlertWSMessage(
                             new GTreasuryEmeraldAlertWSMessage.Data(
                                     false,
-                                    mc.player.getName().toString()
+                                    mc.player.getName().getString()
                             )
                     );
                     features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));
@@ -117,7 +117,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
                         GTreasuryEmeraldAlertWSMessage payload = new GTreasuryEmeraldAlertWSMessage(
                                 new GTreasuryEmeraldAlertWSMessage.Data(
                                         true,
-                                        mc.player.getName().toString()
+                                        mc.player.getName().getString()
                                 )
                         );
                         features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));

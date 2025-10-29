@@ -145,7 +145,7 @@ public final class WynnUtils {
     }
 
     public static CompletableFuture<Boolean> isSequoiaGuildMember() {
-        return Services.Player.getPlayer(mc.player.getName().toString()).thenApplyAsync(playerResponse -> {
+        return Services.Player.getPlayer(mc.player.getName().getString()).thenApplyAsync(playerResponse -> {
             if (playerResponse == null) {
                 SeqClient.debug("playerResponse is null, querying Character Info for guild info");
 
