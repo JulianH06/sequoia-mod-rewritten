@@ -1,6 +1,5 @@
 package star.sequoia2.utils.chatparser;
 
-import com.wynntils.utils.mc.McUtils;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
@@ -17,6 +16,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.features.impl.ws.ChatHookFeature.remove_formatting;
 import static star.sequoia2.utils.cache.SequoiaMemberCache.isSequoiaMember;
 
@@ -101,7 +101,7 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
 
             SeqClient.debug(type.getDisplayName());
 
-            UUID reporter = McUtils.player().getUuid();
+            UUID reporter = mc.player.getUuid();
 
             if (reporter == null) return;
 

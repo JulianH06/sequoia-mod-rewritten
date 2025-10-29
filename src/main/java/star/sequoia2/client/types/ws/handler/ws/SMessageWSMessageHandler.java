@@ -1,13 +1,11 @@
 package star.sequoia2.client.types.ws.handler.ws;
 
 import com.google.gson.JsonElement;
-import com.wynntils.utils.mc.McUtils;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.StringUtils;
-
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
@@ -18,6 +16,7 @@ import star.sequoia2.utils.URLUtils;
 
 import java.util.regex.Matcher;
 
+import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 import static star.sequoia2.utils.XMLUtils.extractTextFromXml;
 
@@ -44,7 +43,7 @@ public class SMessageWSMessageHandler extends WSMessageHandler implements Featur
             if (trimmed.startsWith("<")) {
                 String tex = extractTextFromXml(serverMessageText);
                 MutableText messageComponent = Text.literal("Server message ➤ ").append(teXParser().parseMutableText(tex));
-                McUtils.sendMessageToClient(SeqClient.prefix(messageComponent));
+                mc.getMessageHandler().onGameMessage(SeqClient.prefix(messageComponent), false);
                 return;
             }
 
@@ -74,11 +73,11 @@ public class SMessageWSMessageHandler extends WSMessageHandler implements Featur
                         .styled(style -> style.withColor(0x19A775)));
             }
 
-            McUtils.sendMessageToClient(SeqClient.prefix(messageComponent));
+            mc.getMessageHandler().onGameMessage(SeqClient.prefix(messageComponent), false);
         } else {
-            McUtils.sendMessageToClient(
+            mc.getMessageHandler().onGameMessage(
                     SeqClient.prefix(Text.literal("Server message ➤ " + sMessageWSMessageData))
-                            .styled(style -> style.withColor(0x19A775)));
+                            .styled(style -> style.withColor(0x19A775)), false);
         }
     }
 }

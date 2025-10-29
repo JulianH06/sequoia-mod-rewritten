@@ -1,7 +1,6 @@
 package star.sequoia2.features.impl.ws;
 
 import com.collarmc.pounce.Subscribe;
-import com.wynntils.core.text.StyledText;
 import net.minecraft.network.packet.s2c.play.ChatMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.text.Text;
@@ -9,6 +8,7 @@ import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.GuildParserAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
+import star.sequoia2.client.types.text.StyledText;
 import star.sequoia2.events.PacketEvent;
 import star.sequoia2.events.WynncraftLoginEvent;
 import star.sequoia2.features.ToggleFeature;

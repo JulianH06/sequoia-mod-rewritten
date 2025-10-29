@@ -4,9 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.wynntils.core.components.Models;
-import com.wynntils.utils.mc.McUtils;
 import lombok.Getter;
-import net.minecraft.client.MinecraftClient;
 import org.apache.commons.lang3.StringUtils;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -203,7 +201,7 @@ public class WebSocketFeature extends ToggleFeature {
             return;
         }
 
-        if (McUtils.player() == null || StringUtils.isBlank(McUtils.player().getUuidAsString())) {
+        if (mc.player == null || StringUtils.isBlank(mc.player.getUuidAsString())) {
             SeqClient.warn("Player UUID is not available. WebSocket connection will not be established.");
             return;
         }
@@ -233,7 +231,7 @@ public class WebSocketFeature extends ToggleFeature {
 
             GIdentifyWSMessage gIdentifyWSMessage = new GIdentifyWSMessage(new GIdentifyWSMessage.Data(
                     AccessTokenManager.retrieveAccessToken(),
-                    McUtils.player().getUuidAsString(),
+                    mc.player.getUuidAsString(),
                     SeqClient.getVersionInt()));
             sendMessage(gIdentifyWSMessage);
         });

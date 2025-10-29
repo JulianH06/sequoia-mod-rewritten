@@ -11,7 +11,6 @@ import com.wynntils.handlers.container.scriptedquery.ScriptedContainerQuery;
 import com.wynntils.handlers.container.type.ContainerContent;
 import com.wynntils.models.containers.ContainerModel;
 import com.wynntils.utils.mc.LoreUtils;
-import com.wynntils.utils.mc.McUtils;
 import com.wynntils.utils.wynn.InventoryUtils;
 import lombok.Getter;
 import net.minecraft.item.ItemStack;
@@ -34,6 +33,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static star.sequoia2.client.SeqClient.mc;
 
 public class GuildRewardTrackingFeature extends ToggleFeature {
     private static final int GUILD_REWARDS_ITEM_SLOT = 27;
@@ -69,7 +70,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
                     GTreasuryEmeraldAlertWSMessage payload = new GTreasuryEmeraldAlertWSMessage(
                             new GTreasuryEmeraldAlertWSMessage.Data(
                                     false,
-                                    McUtils.playerName()
+                                    mc.player.getName().toString()
                             )
                     );
                     features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));
@@ -102,13 +103,13 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
                     int aspectValue = (aspects.first * 100 / aspects.second);
                     int tomeValue = (tomes.first * 100 / tomes.second);
                     if (emeraldValue >= emeraldNotifyValue.get()) {
-                        McUtils.sendMessageToClient(SeqClient.prefix(Text.of("Emeralds are above value of : " + emeraldNotifyValue.get() + "%")));
+                        mc.getMessageHandler().onGameMessage(SeqClient.prefix(Text.of("Emeralds are above value of : " + emeraldNotifyValue.get() + "%")), false);
                     }
                     if (aspectValue >= aspectNotifyValue.get()) {
-                        McUtils.sendMessageToClient(SeqClient.prefix(Text.of("Aspects are above value of : " + aspectNotifyValue.get() + "%")));
+                        mc.getMessageHandler().onGameMessage(SeqClient.prefix(Text.of("Aspects are above value of : " + aspectNotifyValue.get() + "%")), false);
                     }
                     if (tomeValue >= tomeNotifyValue.get()) {
-                        McUtils.sendMessageToClient(SeqClient.prefix(Text.of("Tomes are above value of : " + tomeNotifyValue.get() + "%")));
+                        mc.getMessageHandler().onGameMessage(SeqClient.prefix(Text.of("Tomes are above value of : " + tomeNotifyValue.get() + "%")), false);
                     }
 
                     if(emeraldValue>= 90 && sendPing.get()){
@@ -116,7 +117,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
                         GTreasuryEmeraldAlertWSMessage payload = new GTreasuryEmeraldAlertWSMessage(
                                 new GTreasuryEmeraldAlertWSMessage.Data(
                                         true,
-                                        McUtils.playerName()
+                                        mc.player.getName().toString()
                                 )
                         );
                         features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));

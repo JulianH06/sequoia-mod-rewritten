@@ -1,6 +1,5 @@
 package star.sequoia2.utils.chatparser;
 
-import com.wynntils.utils.mc.McUtils;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.message.ws.GChatMessageWSMessage;
@@ -10,6 +9,7 @@ import star.sequoia2.utils.TimeUtils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.features.impl.ws.ChatHookFeature.clean;
 import static star.sequoia2.utils.cache.SequoiaMemberCache.isSequoiaMember;
 
@@ -76,7 +76,7 @@ public class GuildMessageParser implements FeaturesAccessor {
                             nickname,
                             guildMsg,
                             TimeUtils.wsTimestamp(),
-                            McUtils.playerName()
+                            mc.player.getName().toString()
                     )
             );
             features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(payload));
