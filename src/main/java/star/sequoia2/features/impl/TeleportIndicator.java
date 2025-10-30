@@ -1,6 +1,7 @@
 package star.sequoia2.features.impl;
 
 import com.collarmc.pounce.Subscribe;
+import com.wynntils.core.components.Managers;
 import com.wynntils.core.text.StyledText;
 import com.wynntils.utils.mc.LoreUtils;
 import net.minecraft.item.ItemStack;
@@ -52,27 +53,28 @@ public class TeleportIndicator extends ToggleFeature implements RenderUtilAccess
     }
     @Subscribe
     public void onWynncraftJoin(WynncraftLoginEvent event){
-        mc.execute(()->{
-            currentClass = Class.Else;
-            max = -1;
-            if (mc.player.getMainHandStack()!= null){
-                ItemStack item = mc.player.getMainHandStack();
-                if (item.getItem() != null && item.getItem().equals(Items.POTION)){
-                    for (StyledText loreLine : LoreUtils.getLore(item)) {
-                        if (loreLine.getString().contains("§a✔§7 Class Req: Mage/Dark Wizard")){
-                            currentClass = Class.Mage;
-                            max = mageRange.get();
-                        }
-                        if (loreLine.getString().contains("§a✔§7 Class Req: Shaman/Skyseer")){
-                            currentClass = Class.Shaman;
-                            max = shamanRange.get();
-                        }
+        Managers.TickScheduler.scheduleLater(
+                () -> {
+                    currentClass = Class.Else;
+                    max = -1;
+                    if (mc.player.getMainHandStack()!= null){
+                        ItemStack item = mc.player.getMainHandStack();
+                        if (item.getItem() != null && item.getItem().equals(Items.POTION)){
+                            for (StyledText loreLine : LoreUtils.getLore(item)) {
+                                if (loreLine.getString().contains("§a✔§7 Class Req: Mage/Dark Wizard")){
+                                    currentClass = Class.Mage;
+                                    max = mageRange.get();
+                                }
+                                if (loreLine.getString().contains("§a✔§7 Class Req: Shaman/Skyseer")){
+                                    currentClass = Class.Shaman;
+                                    max = shamanRange.get();
+                                }
 
+                            }
+                        }
                     }
-                }
-            }
-
-        });
+                },
+                10);
     }
 
     public enum Class{

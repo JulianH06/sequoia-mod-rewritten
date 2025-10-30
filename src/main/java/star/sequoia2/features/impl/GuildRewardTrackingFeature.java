@@ -2,7 +2,6 @@ package star.sequoia2.features.impl;
 
 import com.collarmc.pounce.Subscribe;
 import com.ibm.icu.impl.Pair;
-import com.wynntils.core.WynntilsMod;
 import com.wynntils.core.components.Models;
 import com.wynntils.core.text.StyledText;
 import com.wynntils.handlers.container.scriptedquery.QueryBuilder;
@@ -136,7 +135,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
             QueryBuilder queryBuilder = ScriptedContainerQuery.builder("Guild Reward Query");
 
             queryBuilder.onError(message -> {
-                WynntilsMod.warn("Error querying guild rewards: " + message);
+                SeqClient.warn("Error querying guild rewards: " + message);
                 result.completeExceptionally(new RuntimeException("Error querying guild rewards: " + message));
             });
 
