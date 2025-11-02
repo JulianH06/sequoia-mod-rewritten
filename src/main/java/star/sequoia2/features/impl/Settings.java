@@ -38,7 +38,7 @@ public class Settings extends Feature {
     FloatSetting boxH = settings().number("GuiHeight", "", 300f, 200f, 600f);
     FloatSetting pad = settings().number("Pad", "", 5f, 1f, 10f);
     FloatSetting btndW = settings().number("ButtonWidth", "", 50f, 40f, 60f);
-    FloatSetting btnH = settings().number("ButtonHeight", "", 20f, 20f, 40f);
+    FloatSetting btnH = settings().number("ButtonHeight", "", 20f, 20f, 22f);
     FloatSetting btnGap = settings().number("ButtonGap", "", 3f, 1f, 5f);
     FloatSetting rounding = settings().number("Rounding", "", 3f, 0f, 8f);
 

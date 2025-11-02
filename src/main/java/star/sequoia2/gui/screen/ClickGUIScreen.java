@@ -29,9 +29,17 @@ public class ClickGUIScreen extends Screen implements FeaturesAccessor, RenderUt
     @Getter
     public final GuiRoot root;
 
+    private float openScale = 0f;
+
     public ClickGUIScreen() {
         super(Text.literal("Seq"));
         root = new GuiRoot(Categories.all().toList());
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        openScale = 0f;
     }
 
     private double[] getScaledMouse(double mouseX, double mouseY) {
@@ -95,13 +103,15 @@ public class ClickGUIScreen extends Screen implements FeaturesAccessor, RenderUt
         int fixedMouseX = (int) scaled[0];
         int fixedMouseY = (int) scaled[1];
 
-        context.getMatrices().push();
         float base = 2.0f;
         float sf = (float) mc.getWindow().getScaleFactor();
-        float scale = base / sf;
-        float scaledHeight = (context.getScaledWindowHeight() / scale);
-        float scaledWidth = (context.getScaledWindowWidth() / scale);
-        context.getMatrices().scale(scale, scale, 1.0f);
+        openScale = Math.min(base, openScale + delta);
+        float appliedScale = Math.max(0.0001f, openScale / sf);
+
+        context.getMatrices().push();
+        float scaledHeight = (context.getScaledWindowHeight() / appliedScale);
+        float scaledWidth = (context.getScaledWindowWidth() / appliedScale);
+        context.getMatrices().scale(appliedScale, appliedScale, 1.0f);
 
         if (root != null) {
             root.setPos(0, 0);

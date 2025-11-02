@@ -25,11 +25,12 @@ public class TeleportIndicator extends ToggleFeature implements RenderUtilAccess
     ColorSetting color = settings().color("Color", "color of the box indicator", new mil.nga.color.Color(255, 255, 255));
     IntSetting mageRange = settings().number("Mage Range", "how far you will tp", 16, 1, 30);
     IntSetting shamanRange = settings().number("Shaman Range", "how far you will tp", 16, 1, 30);
+
     public TeleportIndicator() {
         super("TeleportIndicator", "Renders where you will teleport on mage and shaman");
     }
 
-    public Class currentClass = Class.Else;
+    public Class currentClass = Class.Mage; //start as something with range
     double max = 0;
 
     @Subscribe
