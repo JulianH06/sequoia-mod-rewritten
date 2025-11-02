@@ -20,7 +20,6 @@ import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 import static star.sequoia2.utils.XMLUtils.extractTextFromXml;
 
-
 public class SMessageWSMessageHandler extends WSMessageHandler implements FeaturesAccessor, TeXParserAccessor {
     public SMessageWSMessageHandler(String message) {
         super(GSON.fromJson(message, SMessageWSMessage.class), message);
@@ -53,31 +52,32 @@ public class SMessageWSMessageHandler extends WSMessageHandler implements Featur
 
             while (matcher.find()) {
                 if (matcher.start() > lastMatchEnd) {
-                    messageComponent = messageComponent.append(
-                            Text.literal(serverMessageText.substring(lastMatchEnd, matcher.start()))
-                                    .styled(style -> style.withColor(0x19A775)));
+                    String pre = serverMessageText.substring(lastMatchEnd, matcher.start());
+                    messageComponent = messageComponent.append(teXParser().parseMutableText(pre));
                 }
-//
+
                 String url = matcher.group();
-                messageComponent =
-                        messageComponent.append(Text.literal(url).styled(style -> style.withColor(0x1DA1F2)
+                MutableText urlText = Text.literal(url)
+                        .styled(style -> style
                                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
-                                .withHoverEvent(new HoverEvent(
-                                        HoverEvent.Action.SHOW_TEXT, Text.literal("Click to open URL")))));
+                                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to open URL"))));
+                messageComponent = messageComponent.append(urlText);
 
                 lastMatchEnd = matcher.end();
             }
 
             if (lastMatchEnd < serverMessageText.length()) {
-                messageComponent = messageComponent.append(Text.literal(serverMessageText.substring(lastMatchEnd))
-                        .styled(style -> style.withColor(0x19A775)));
+                String tail = serverMessageText.substring(lastMatchEnd);
+                messageComponent = messageComponent.append(teXParser().parseMutableText(tail));
             }
 
             mc.getMessageHandler().onGameMessage(SeqClient.prefix(messageComponent), false);
         } else {
+            String tex = extractTextFromXml(String.valueOf(sMessageWSMessageData));
             mc.getMessageHandler().onGameMessage(
-                    SeqClient.prefix(Text.literal("Server message ➤ " + sMessageWSMessageData))
-                            .styled(style -> style.withColor(0x19A775)), false);
+                    SeqClient.prefix(Text.literal("Server message ➤ ").append(teXParser().parseMutableText(tex))),
+                    false
+            );
         }
     }
 }

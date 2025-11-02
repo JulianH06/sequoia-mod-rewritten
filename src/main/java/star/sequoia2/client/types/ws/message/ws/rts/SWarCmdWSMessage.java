@@ -8,7 +8,7 @@ import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
 public class SWarCmdWSMessage extends WSMessage {
     public SWarCmdWSMessage(JsonElement data) {
-        super(WSMessageType.S_MESSAGE.getValue(), data);
+        super(WSMessageType.S_WAR_CMD.getValue(), data);
     }
 
     public Data getSWarCmdData() {
