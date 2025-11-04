@@ -79,7 +79,7 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor {
                         return;
                     }
 
-                    if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::getClient).orElse(null) == null
+                    if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::getClient).isEmpty()
                             || !features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
                         ctx.getSource()
                                 .sendError(SeqClient.prefix(Text.translatable("sequoia.command.disconnect.notConnected")));
