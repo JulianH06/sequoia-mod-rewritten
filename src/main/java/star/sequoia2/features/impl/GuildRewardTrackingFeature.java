@@ -28,6 +28,7 @@ import star.sequoia2.settings.types.IntSetting;
 import star.sequoia2.utils.wynn.WynnUtils;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
@@ -44,6 +45,10 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
     private static final Pattern OVERFLOW_GUILD_REWARDS_EMERALDS_PATTERN = Pattern.compile("^§aEmeralds: §c(\\d+)§7/(\\d+)$");
     private static final Pattern OVERFLOW_GUILD_REWARDS_TOMES_PATTERN = Pattern.compile("^§5Guild Tomes: §c(\\d+)§7/(\\d+)$");
     private static final Pattern OVERFLOW_GUILD_REWARDS_ASPECTS_PATTERN = Pattern.compile("^§#d6401effAspects: §c(\\d+)§7/(\\d+)$");
+    private static final Pattern TREASURY_REWARD_PATTERN = Pattern.compile(
+            "\\uDAFF\\uDFFC\\uE001\\uDB00\\uDC06\\s+(?:§.)*([\\p{L}\\p{N}_]+)\\s+rewarded\\s+((?:§.|[^§])+?)\\s+to\\s+(?:§.)*([\\p{L}\\p{N}_]+)",
+            Pattern.CASE_INSENSITIVE
+    );
     public GuildRewardTrackingFeature() {
         super("GuildRewardTrackingFeature", "Tracks and notifies when guild rewards are over a certain point.");
     }
@@ -60,22 +65,24 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
 
 
     @Subscribe
-    private void cancelPing(PacketEvent.PacketReceiveEvent event){
+    private void cancelPing(PacketEvent.PacketReceiveEvent event) {
         if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) return;
-        if (event.packet() instanceof GameMessageS2CPacket packet){
-            if (!packet.overlay()){ //todo: ask flare or op to make this regex :like:
-                if (packet.content().toString().contains("\uDAFF\uDFFC\uE001\uDB00\uDC06") && packet.content().toString().contains("to")
-                        && packet.content().toString().contains("rewarded") && packet.content().toString().contains("Emeralds")) {
-                    GTreasuryEmeraldAlertWSMessage payload = new GTreasuryEmeraldAlertWSMessage(
-                            new GTreasuryEmeraldAlertWSMessage.Data(
-                                    false,
-                                    mc.player.getName().getString()
-                            )
-                    );
-                    features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));
-                }
-            }
-        }
+        if (!(event.packet() instanceof GameMessageS2CPacket packet) || packet.overlay()) return;
+
+        String raw = packet.content().toString();
+        Matcher matcher = TREASURY_REWARD_PATTERN.matcher(raw);
+        if (!matcher.find()) return;
+
+        String reward = matcher.group(2).replaceAll("§.", "");
+        if (!reward.toLowerCase(Locale.ROOT).contains("emerald")) return;
+
+        GTreasuryEmeraldAlertWSMessage payload = new GTreasuryEmeraldAlertWSMessage(
+                new GTreasuryEmeraldAlertWSMessage.Data(
+                        false,
+                        mc.player.getName().getString()
+                )
+        );
+        features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));
     }
     //                &b󏿼󐀆 &3GAZtheMiner rewarded &e1024 Emeralds&3 to cinfrascitizen
     //                &b󏿼󏿿󏿾 &3Shisouhan rewarded &ean Aspect&3 to LegendaryVirus

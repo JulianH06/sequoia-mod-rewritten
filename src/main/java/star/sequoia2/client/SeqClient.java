@@ -42,7 +42,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class SeqClient implements ClientModInitializer, EventBusAccessor {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static String MOD_ID = "seq";
+    public static final String MOD_ID = "seq";
 
     @Getter
     public static File modJar;
