@@ -105,7 +105,7 @@ public class SeqConnectCommand extends Command implements FeaturesAccessor {
                         return;
                     }
 
-                    if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::getClient).orElse(null) == null) {
+                    if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::getClient).isEmpty()) {
                         features().getIfActive(WebSocketFeature.class).ifPresent(WebSocketFeature::initClient);
                     }
 
