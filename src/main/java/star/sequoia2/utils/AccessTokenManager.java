@@ -20,8 +20,12 @@ public final class AccessTokenManager {
     public static final String ENCRYPTION_KEY_PROPERTY = "SEQUOIA_MOD_ENCRYPTION_KEY";
 
     public static String getUserSpecificFolderPath() {
-        String userUUID = mc.player.getUuidAsString();
-        return BASE_FOLDER_PATH + userUUID + File.separator;
+        java.util.UUID uuid = mc.getSession() != null ? mc.getSession().getUuidOrNull() : null;
+        if (uuid == null) {
+            SeqClient.warn("Player UUID unavailable; using shared storage path.");
+            return BASE_FOLDER_PATH;
+        }
+        return BASE_FOLDER_PATH + uuid + File.separator;
     }
 
     public static String getEncryptionKey() {
@@ -45,16 +49,15 @@ public final class AccessTokenManager {
 
     public static void generateAndStoreEncryptionKey(File envFile) {
         File directory = envFile.getParentFile();
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
+        if (directory != null && !directory.exists() && !directory.mkdirs())
+            SeqClient.warn("Failed to create directory for encryption key: " + directory.getAbsolutePath());
 
         byte[] key = new byte[32];
         new SecureRandom().nextBytes(key);
 
         String encryptionKey = Base64.getUrlEncoder().encodeToString(key);
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(envFile, StandardCharsets.UTF_8, true))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(envFile, StandardCharsets.UTF_8))) {
             writer.write(ENCRYPTION_KEY_PROPERTY + "=" + encryptionKey + "\n");
             SeqClient.debug(
                     "Generated encryption key: " + encryptionKey + " and stored in " + envFile.getAbsoluteFile());
@@ -68,6 +71,9 @@ public final class AccessTokenManager {
         File tokenFile = new File(getUserSpecificFolderPath() + ACCESS_TOKEN_FILE_NAME);
 
         try {
+            File parent = tokenFile.getParentFile();
+            if (parent != null && !parent.exists() && !parent.mkdirs())
+                SeqClient.warn("Failed to create directory for token file: " + parent.getAbsolutePath());
             String encryptionKey = getEncryptionKey();
             if (StringUtils.isBlank(encryptionKey)) {
                 SeqClient.error("Encryption key not found in .env file");
@@ -128,8 +134,11 @@ public final class AccessTokenManager {
 
     public static void invalidateAccessToken() {
         File tokenFile = new File(getUserSpecificFolderPath() + ACCESS_TOKEN_FILE_NAME);
-        if (tokenFile.exists()) {
-            tokenFile.delete();
+        File parent = tokenFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs())
+            SeqClient.warn("Failed to create directory for token file: " + parent.getAbsolutePath());
+        if (tokenFile.exists() && !tokenFile.delete()) {
+            SeqClient.warn("Failed to delete access token file: " + tokenFile.getAbsolutePath());
         } // i don't even care if this is insecure, blame dot jj or whoever originally wrote this
         SeqClient.debug("Access token was invalidated.");
     }
