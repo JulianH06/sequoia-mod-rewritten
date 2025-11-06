@@ -119,7 +119,8 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
         //Static init no need for instance in this case
         Threading tInit = new Threading();
-        Thread thread = new Thread(tInit);
+        Thread thread = new Thread(tInit, "Sequoia-CacheInit");
+        thread.setDaemon(true);
         thread.start();
         HadesUtils.init();
 

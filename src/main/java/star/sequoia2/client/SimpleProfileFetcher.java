@@ -14,6 +14,7 @@ import static star.sequoia2.client.SeqClient.mc;
 
 public class SimpleProfileFetcher {
     private static final ConcurrentHashMap<UUID,   CompletableFuture<Optional<GameProfile>>> BY_ID   = new ConcurrentHashMap<>();
+    private static final CompletableFuture<Optional<GameProfile>> EMPTY = CompletableFuture.completedFuture(Optional.empty());
 
     ApiServices services;
 
@@ -24,9 +25,8 @@ public class SimpleProfileFetcher {
     }
 
     public CompletableFuture<Optional<GameProfile>> fetchByUUID(UUID id) {
-        if (mc.getSessionService() == null || id == null) {
-            return CompletableFuture.completedFuture(Optional.empty());
-        }
+        if (services == null || mc.getSessionService() == null || id == null)
+            return EMPTY;
         return BY_ID.computeIfAbsent(id, uuid ->
             CompletableFuture.supplyAsync(() -> {
                 ProfileResult res = services.sessionService().fetchProfile(uuid, true);
