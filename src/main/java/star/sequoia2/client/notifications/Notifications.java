@@ -1,6 +1,5 @@
 package star.sequoia2.client.notifications;
 
-import net.minecraft.network.message.MessageSignatureData;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -8,14 +7,11 @@ import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.features.impl.Settings;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static star.sequoia2.client.SeqClient.mc;
 
 public class Notifications implements FeaturesAccessor {
-
-    private Text lastMessage;
 
     public void sendAlert(Text alert) {
         if (notReady()) return;
@@ -60,13 +56,6 @@ public class Notifications implements FeaturesAccessor {
         for (int i = 1; i < messages.size(); i++) {
             mc.inGameHud.getChatHud().addMessage(messages.get(i));
         }
-    }
-
-    private static byte[] createSignature(String identifier) {
-        byte[] bytes = new byte[256];
-        byte[] identifierBytes = identifier.getBytes(StandardCharsets.UTF_8);
-        System.arraycopy(identifierBytes, 0, bytes, 0, Math.min(bytes.length, identifierBytes.length));
-        return bytes;
     }
 
     private static boolean notReady() {
