@@ -17,6 +17,7 @@ public class Commands {
         new CompareCommand().registerAll(dispatcher, access);
         new SeqConnectCommand().registerAll(dispatcher, access);
         new SeqDisconnectCommand().registerAll(dispatcher, access);
+        new SeqUpdateCommand().registerAll(dispatcher, access);
         new PlayerInfoCommand().registerAll(dispatcher, access);
         new PlayerCharactersCommand().registerAll(dispatcher, access);
         new AuthCommand().registerAll(dispatcher, access);

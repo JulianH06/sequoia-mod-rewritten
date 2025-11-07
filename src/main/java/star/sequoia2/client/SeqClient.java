@@ -33,7 +33,10 @@ import star.sequoia2.utils.render.Render2DUtil;
 import star.sequoia2.utils.render.Render3DUtil;
 import star.sequoia2.utils.text.parser.TeXParser;
 import star.sequoia2.utils.wynn.HadesUtils;
+import star.sequoia2.client.update.UpdateManager;
 
+import java.net.URISyntaxException;
+import java.security.CodeSource;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executors;
@@ -131,6 +134,8 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         notifications = new Notifications();
         render2DUtil = new Render2DUtil();
         render3DUtil = new Render3DUtil();
+
+        locateModJar();
     }
 
     @Subscribe(value = Preference.MAIN, priority = 1)
@@ -153,6 +158,8 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
         initialized = true;
         LOGGER.info("Initialization complete.");
+
+        UpdateManager.scheduleAutomaticCheck();
     }
 
     @Subscribe(value = Preference.CALLER, priority = 2)
@@ -232,5 +239,25 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
     public static boolean isDebugMode() {
         return debugMode;
+    }
+
+    private void locateModJar() {
+        if (modJar != null) return;
+        CodeSource source = SeqClient.class.getProtectionDomain().getCodeSource();
+        if (source == null) {
+            LOGGER.info("Mod code source unavailable; update installer disabled for this session.");
+            return;
+        }
+        try {
+            File location = new File(source.getLocation().toURI());
+            if (location.isFile()) {
+                modJar = location;
+                LOGGER.info("Detected Sequoia jar at {}", modJar.getAbsolutePath());
+            } else {
+                LOGGER.info("Sequoia is running from {} (not a jar); update installer disabled.", location);
+            }
+        } catch (URISyntaxException e) {
+            LOGGER.warn("Failed to resolve mod jar location", e);
+        }
     }
 }
