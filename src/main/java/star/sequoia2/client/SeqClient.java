@@ -60,7 +60,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     //enable and compile for testers
     public static boolean testMode = false;
 
-    public static boolean debugMode = true;
+    private static boolean debugMode = true;
 
     public static final MinecraftClient mc = MinecraftClient.getInstance();
 
@@ -223,5 +223,14 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         if (debugMode) {
             LOGGER.info("[VERBOSE] {}", message);
         }
+    }
+
+    public static void setDebugMode(boolean enabled) {
+        debugMode = enabled;
+        LOGGER.info("Debug logging {}", enabled ? "enabled" : "disabled");
+    }
+
+    public static boolean isDebugMode() {
+        return debugMode;
     }
 }

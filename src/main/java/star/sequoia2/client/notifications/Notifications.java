@@ -13,6 +13,9 @@ import static star.sequoia2.client.SeqClient.mc;
 
 public class Notifications implements FeaturesAccessor {
 
+    private Text lastMessage;
+    private String lastSignature;
+
     public void sendAlert(Text alert) {
         if (notReady()) return;
         mc.inGameHud.setTitle(alert);
@@ -35,16 +38,22 @@ public class Notifications implements FeaturesAccessor {
      */
     public void sendMessage(Text message, String sig) {
         if (notReady()) return;
+        if (sig != null && sig.equals(lastSignature) && lastMessage != null && lastMessage.equals(message)) {
+            return;
+        }
 
         int color = feature(Settings.class).getNormalColorInt();
         MutableText prefix = Text.literal("[Seq] ").withColor(color);
+        MutableText body = message.copy();
         if (message.getStyle().getColor() == null) {
-            prefix.append(MutableText.of(message.getContent()).formatted(Formatting.WHITE));
-        } else {
-            prefix.append(message);
+            body = body.formatted(Formatting.WHITE);
         }
+        MutableText rendered = prefix.append(body);
+        mc.inGameHud.getChatHud().addMessage(rendered);
 
-        SeqClient.info(message.toString());
+        SeqClient.debug(message.getString());
+        lastSignature = sig;
+        lastMessage = message.copy();
     }
 
 

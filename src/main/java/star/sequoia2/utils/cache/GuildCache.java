@@ -1,5 +1,6 @@
 package star.sequoia2.utils.cache;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -18,13 +19,13 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static net.fabricmc.fabric.impl.resource.loader.ModResourcePackUtil.GSON;
 import static star.sequoia2.client.SeqClient.mc;
 
 public final class GuildCache  {
     private static final Path FILE = mc.runDirectory
             .toPath().resolve("sequoia/cache/guilds.json");
     private static final Duration MAX_AGE = Duration.ofHours(1);
+    private static final Gson GSON = new GsonBuilder().create();
 
     private static Map<String,String> nameToPrefix = Map.of();
     private static Map<String,String> prefixToName = Map.of();

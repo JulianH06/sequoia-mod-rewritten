@@ -42,6 +42,7 @@ public final class SequoiaMemberCache {
 
     private static final Path FILE = mc.runDirectory
             .toPath().resolve("sequoia/cache/sequoia_members.json");
+    private static final Duration MAX_CACHE_AGE = Duration.ofHours(1);
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final HttpClient HTTP = HttpClient.newBuilder()
@@ -64,23 +65,13 @@ public final class SequoiaMemberCache {
     public static void init() {
         try {
             Files.createDirectories(FILE.getParent());
+            if (cacheFresh()) {
+                loadFromDisk();
+                return;
+            }
             Set<String> uuids = fetchGuildUuids();
             if (uuids.isEmpty()) {
-                if (Files.exists(FILE)) {
-                    try (Reader r = Files.newBufferedReader(FILE, StandardCharsets.UTF_8)) {
-                        List<Entry> list = GSON.fromJson(r, ENTRY_LIST);
-                        if (list != null) {
-                            Map<String, Entry> tmp = new HashMap<>();
-                            for (Entry e : list) {
-                                if (e == null || e.uuid == null) continue;
-                                String u = normalizeUuid(e.uuid);
-                                if (u != null) { tmp.put(u, e); }
-                            }
-                            byUuid = tmp;
-                            rebuildNameIndex();
-                        }
-                    }
-                }
+                loadFromDisk();
                 return; // don’t overwrite with empty
             }
 
@@ -98,6 +89,31 @@ public final class SequoiaMemberCache {
             rebuildNameIndex();
             persist();
         } catch (IOException ignored) {}
+    }
+    private static void loadFromDisk() throws IOException {
+        if (!Files.exists(FILE)) return;
+        try (Reader r = Files.newBufferedReader(FILE, StandardCharsets.UTF_8)) {
+            List<Entry> list = GSON.fromJson(r, ENTRY_LIST);
+            if (list == null) return;
+            Map<String, Entry> tmp = new HashMap<>();
+            for (Entry e : list) {
+                if (e == null || e.uuid == null) continue;
+                String u = normalizeUuid(e.uuid);
+                if (u != null) { tmp.put(u, e); }
+            }
+            byUuid = tmp;
+            rebuildNameIndex();
+        }
+    }
+
+    private static boolean cacheFresh() {
+        if (!Files.exists(FILE)) return false;
+        try {
+            Instant modified = Files.getLastModifiedTime(FILE).toInstant();
+            return Instant.now().isBefore(modified.plus(MAX_CACHE_AGE));
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
     public static boolean isSequoiaMember(String username) {
