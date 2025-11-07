@@ -34,9 +34,17 @@ jobs:
           echo "Renaming $JAR_FILE to Seq.jar"
           mv $JAR_FILE build/libs/Seq.jar
 
-      - name: Upload JAR
+      - name: Upload JAR to Discord
         run: |
-          echo "Uploading Seq.jar"
+          echo "Uploading Seq.jar to Discord"
           curl -X POST -H "Content-Type: multipart/form-data" \
-          -F "file=@build/libs/Seq.jar" \
-          ${{ secrets.DISCORD_WEBHOOK_URL }}
+            -F "file=@build/libs/Seq.jar" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: release-${{ github.run_number }}
+          name: Release ${{ github.run_number }}
+          body: "Automated build from commit ${{ github.sha }}"
+          files: build/libs/Seq.jar
