@@ -69,7 +69,7 @@ public abstract class ToggleFeature extends Feature implements SettingsAccessor,
                 activate();
                 //getSoundUtil().playEnableSound();
             }
-            notifications().sendMessage(Text.of(active ? this.name + Formatting.GREEN + " on" : this.name + Formatting.RED + " off"), this.name);
+            notify(Text.of(active ? this.name + Formatting.GREEN + " on" : this.name + Formatting.RED + " off"), this.name);
         }
     }
 

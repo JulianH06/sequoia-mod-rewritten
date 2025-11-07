@@ -6,10 +6,11 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.command.Command;
 
-public class SeqDebugCommand extends Command {
+public class SeqDebugCommand extends Command implements NotificationsAccessor {
     @Override
     public String getCommandName() {
         return "seqdebug";
@@ -37,6 +38,6 @@ public class SeqDebugCommand extends Command {
 
     private Text statusMessage() {
         String state = SeqClient.isDebugMode() ? "enabled" : "disabled";
-        return SeqClient.prefix(Text.literal("Debug logging is " + state + "."));
+        return prefixed(Text.literal("Debug logging is " + state + "."));
     }
 }

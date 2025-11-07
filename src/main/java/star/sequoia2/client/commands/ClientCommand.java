@@ -10,6 +10,7 @@ import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import org.java_websocket.client.WebSocketClient;
 import star.sequoia2.accessors.FeaturesAccessor;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.command.Command;
 import star.sequoia2.client.types.ws.message.ws.GClientCommandWSMessage;
@@ -17,7 +18,7 @@ import star.sequoia2.features.impl.ws.WebSocketFeature;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
-public class ClientCommand extends Command implements FeaturesAccessor {
+public class ClientCommand extends Command implements FeaturesAccessor, NotificationsAccessor {
     @Override
     public String getCommandName() {
         return "seq";
@@ -48,14 +49,14 @@ public class ClientCommand extends Command implements FeaturesAccessor {
     private int sendClientCommand(CommandContext<FabricClientCommandSource> ctx, String cmd, String args) {
         if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) {
             ctx.getSource().sendError(
-                    SeqClient.prefix(Text.translatable("sequoia.feature.webSocket.featureDisabled")));
+                    prefixed(Text.translatable("sequoia.feature.webSocket.featureDisabled")));
             return 1;
         }
 
         WebSocketClient ws = features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::getClient).orElse(null);
         if (ws == null || !ws.isOpen()) {
             ctx.getSource().sendError(
-                    SeqClient.prefix(Text.translatable("sequoia.command.ws.notConnected")));
+                    prefixed(Text.translatable("sequoia.command.ws.notConnected")));
             return 1;
         }
 

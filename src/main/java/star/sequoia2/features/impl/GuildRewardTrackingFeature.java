@@ -109,13 +109,13 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
                     int aspectValue = (aspects.first * 100 / aspects.second);
                     int tomeValue = (tomes.first * 100 / tomes.second);
                     if (emeraldValue >= emeraldNotifyValue.get()) {
-                        mc.getMessageHandler().onGameMessage(SeqClient.prefix(Text.of("Emeralds are above value of : " + emeraldNotifyValue.get() + "%")), false);
+                        notify(Text.of("Emeralds are above value of : " + emeraldNotifyValue.get() + "%"), "guildreward-emerald");
                     }
                     if (aspectValue >= aspectNotifyValue.get()) {
-                        mc.getMessageHandler().onGameMessage(SeqClient.prefix(Text.of("Aspects are above value of : " + aspectNotifyValue.get() + "%")), false);
+                        notify(Text.of("Aspects are above value of : " + aspectNotifyValue.get() + "%"), "guildreward-aspect");
                     }
                     if (tomeValue >= tomeNotifyValue.get()) {
-                        mc.getMessageHandler().onGameMessage(SeqClient.prefix(Text.of("Tomes are above value of : " + tomeNotifyValue.get() + "%")), false);
+                        notify(Text.of("Tomes are above value of : " + tomeNotifyValue.get() + "%"), "guildreward-tome");
                     }
 
                     if(emeraldValue>= 90 && sendPing.get()){
