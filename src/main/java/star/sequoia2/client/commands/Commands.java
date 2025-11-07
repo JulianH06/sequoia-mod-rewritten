@@ -22,5 +22,6 @@ public class Commands {
         new AuthCommand().registerAll(dispatcher, access);
         new DummyCommand().registerAll(dispatcher, access);
         new ClientCommand().registerAll(dispatcher, access);
+        new SeqDebugCommand().registerAll(dispatcher, access);
     }
 }

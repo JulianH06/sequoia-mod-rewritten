@@ -8,6 +8,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Properties;
@@ -136,6 +137,7 @@ public final class AccessTokenManager {
         Path base = resolveBaseDirectory();
         String uuid = activeUuid();
         Path userDir = base.resolve(uuid);
+        migrateLegacyData(userDir);
         try {
             Files.createDirectories(userDir);
         } catch (IOException ignored) {}
@@ -156,6 +158,30 @@ public final class AccessTokenManager {
             Files.createDirectories(fallback);
         } catch (IOException ignored) {}
         return fallback;
+    }
+
+    private static Path legacyUserDirectory() {
+        Path runDir = mc != null && mc.runDirectory != null ? mc.runDirectory.toPath() : Path.of(".");
+        return runDir.resolve("sequoia").resolve(activeUuid());
+    }
+
+    private static void migrateLegacyData(Path targetDir) {
+        Path legacyDir = legacyUserDirectory();
+        if (legacyDir == null || legacyDir.equals(targetDir)) return;
+
+        migrateFile(legacyDir.resolve(ENV_FILE_NAME), targetDir.resolve(ENV_FILE_NAME));
+        migrateFile(legacyDir.resolve(ACCESS_TOKEN_FILE_NAME), targetDir.resolve(ACCESS_TOKEN_FILE_NAME));
+    }
+
+    private static void migrateFile(Path legacyPath, Path targetPath) {
+        if (!Files.exists(legacyPath) || Files.exists(targetPath)) return;
+        try {
+            Files.createDirectories(targetPath.getParent());
+            Files.move(legacyPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            SeqClient.debug("Migrated legacy credential file from " + legacyPath + " to " + targetPath);
+        } catch (IOException e) {
+            SeqClient.warn("Failed migrating legacy credential file: " + legacyPath, e);
+        }
     }
 
     private static String activeUuid() {

@@ -37,7 +37,7 @@
   "text.config.sequoia2.option.discordChatBridgeFeature.sendInGameGuildChatMessagesToDiscord": "Send messages to discord",
   "text.config.sequoia2.option.discordChatBridgeFeature.sendDiscordMessagesToInGameChat": "Receive messages from discord",
   "text.config.sequoia2.option.webSocketFeature.connectOnJoin": "Connect on Join",
-  "text.config.sequoia2.option.webSocketFeature.connectOnJoin.tooltip": "Runs /connect command once after joining wynncraft.",
+  "text.config.sequoia2.option.webSocketFeature.connectOnJoin.tooltip": "Runs /seqconnect command once after joining wynncraft.",
   "text.config.sequoia2.option.webSocketFeature.autoReconnect": "Auto reconnect",
   "text.config.sequoia2.option.webSocketFeature.autoReconnect.tooltip": "Attempts to reconnect to the server automatically\nif the connection is lost.",
   "text.config.sequoia2.option.webSocketFeature.enabled": "Status",
@@ -147,6 +147,6 @@
   "sequoia.command.disconnect.disconnecting": "Disconnecting...",
   "sequoia.command.disconnect.disconnected": "You have disconnected.",
   "sequoia.command.disconnect.failedToDisconnect": "Failed to disconnect... check your logs if this issue persists.",
-  "sequoia.command.notAuthenticated": "You must authenticate with /connect before using this command.",
-  "sequoia.command.ws.notConnected": "You're not connected to Sequoia! Run /connect, then try again."
+  "sequoia.command.notAuthenticated": "You must authenticate with /seqconnect before using this command.",
+  "sequoia.command.ws.notConnected": "You're not connected to Sequoia! Run /seqconnect, then try again."
 }
