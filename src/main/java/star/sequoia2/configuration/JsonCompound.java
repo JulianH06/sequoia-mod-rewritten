@@ -1,31 +1,32 @@
 package star.sequoia2.configuration;
 
-import com.google.gson.*;
-import com.google.gson.internal.LinkedTreeMap;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 public class JsonCompound extends JsonElement {
-    private final LinkedTreeMap<String, JsonElement> members;
+    private final JsonObject delegate;
 
     public JsonCompound() {
-        this(new LinkedTreeMap<>(false));
+        this(new JsonObject());
     }
 
-    @SuppressWarnings("deprecation") // superclass constructor
-    private JsonCompound(Map<String, JsonElement> members) {
-        this.members = (LinkedTreeMap<String, JsonElement>) members;
+    private JsonCompound(JsonObject delegate) {
+        this.delegate = delegate;
     }
 
     public static JsonCompound wrap(JsonElement element) {
         if (element instanceof JsonCompound compound) {
             return compound;
         } else if (element instanceof JsonObject object) {
-            return new JsonCompound(object.asMap());
+            return new JsonCompound(object);
         } else {
             throw new ClassCastException("Object cannot be cast to JsonCompound");
         }
@@ -33,20 +34,18 @@ public class JsonCompound extends JsonElement {
 
     @Override
     public JsonCompound deepCopy() {
-        JsonCompound result = new JsonCompound();
-        for (Map.Entry<String, JsonElement> entry : members.entrySet()) {
-            result.put(entry.getKey(), entry.getValue().deepCopy());
-        }
-        return result;
+        return new JsonCompound(delegate.deepCopy());
     }
 
     public boolean contains(String key) {
-        return members.containsKey(key);
+        return delegate.has(key);
     }
 
     @Nullable
     public JsonElement put(String property, JsonElement value) {
-        return members.put(property, value == null ? JsonNull.INSTANCE : value);
+        JsonElement previous = delegate.get(property);
+        delegate.add(property, value == null ? JsonNull.INSTANCE : value);
+        return previous;
     }
 
     public void putByte(String key, byte value) {
@@ -88,7 +87,7 @@ public class JsonCompound extends JsonElement {
     public byte getByte(String key) {
         try {
             if (contains(key)) {
-                return members.get(key).getAsByte();
+                return delegate.get(key).getAsByte();
             }
         } catch (UnsupportedOperationException ignored) {}
 
@@ -98,7 +97,7 @@ public class JsonCompound extends JsonElement {
     public short getShort(String key) {
         try {
             if (contains(key)) {
-                return members.get(key).getAsShort();
+                return delegate.get(key).getAsShort();
             }
         } catch (UnsupportedOperationException ignored) {}
 
@@ -108,7 +107,7 @@ public class JsonCompound extends JsonElement {
     public int getInt(String key) {
         try {
             if (contains(key)) {
-                return members.get(key).getAsInt();
+                return delegate.get(key).getAsInt();
             }
         } catch (UnsupportedOperationException ignored) {}
 
@@ -118,7 +117,7 @@ public class JsonCompound extends JsonElement {
     public long getLong(String key) {
         try {
             if (contains(key)) {
-                return members.get(key).getAsLong();
+                return delegate.get(key).getAsLong();
             }
         } catch (UnsupportedOperationException ignored) {}
 
@@ -127,8 +126,8 @@ public class JsonCompound extends JsonElement {
 
     public float getFloat(String key) {
         try {
-            if (this.contains(key)) {
-                return members.get(key).getAsFloat();
+            if (contains(key)) {
+                return delegate.get(key).getAsFloat();
             }
         } catch (UnsupportedOperationException ignored) {}
 
@@ -137,8 +136,8 @@ public class JsonCompound extends JsonElement {
 
     public double getDouble(String key) {
         try {
-            if (this.contains(key)) {
-                return members.get(key).getAsDouble();
+            if (contains(key)) {
+                return delegate.get(key).getAsDouble();
             }
         } catch (UnsupportedOperationException ignored) {}
 
@@ -147,8 +146,8 @@ public class JsonCompound extends JsonElement {
 
     public String getString(String key) {
         try {
-            if (this.contains(key)) {
-                return members.get(key).getAsString();
+            if (contains(key)) {
+                return delegate.get(key).getAsString();
             }
         } catch (UnsupportedOperationException ignored) {}
 
@@ -157,8 +156,8 @@ public class JsonCompound extends JsonElement {
 
     public boolean getBoolean(String key) {
         try {
-            if (this.contains(key)) {
-                return members.get(key).getAsBoolean();
+            if (contains(key)) {
+                return delegate.get(key).getAsBoolean();
             }
         } catch (UnsupportedOperationException ignored) {}
 
@@ -167,8 +166,8 @@ public class JsonCompound extends JsonElement {
 
     public UUID getUuid(String key) {
         try {
-            if (this.contains(key)) {
-                return UUID.fromString(members.get(key).getAsString());
+            if (contains(key)) {
+                return UUID.fromString(delegate.get(key).getAsString());
             }
         } catch (UnsupportedOperationException | IllegalArgumentException ignored) {}
 
@@ -176,61 +175,48 @@ public class JsonCompound extends JsonElement {
     }
 
     public JsonCompound getCompound(String key) {
-        if (contains(key)) {
-            if (members.get(key) instanceof JsonCompound compound) {
-                return compound;
-            } else if (members.get(key) instanceof JsonObject object) {
-                return JsonCompound.wrap(object);
-            }
+        if (!contains(key)) {
+            return new JsonCompound();
         }
-
+        JsonElement element = delegate.get(key);
+        if (element instanceof JsonCompound compound) {
+            return compound;
+        } else if (element instanceof JsonObject object) {
+            return JsonCompound.wrap(object);
+        }
         return new JsonCompound();
     }
 
     public JsonArray getList(String key) {
         if (contains(key)) {
-            return members.get(key).getAsJsonArray();
+            return delegate.get(key).getAsJsonArray();
         }
-
         return new JsonArray();
     }
 
     public int size() {
-        return members.size();
+        return delegate.size();
     }
 
     public boolean isEmpty() {
-        return members.isEmpty();
+        return delegate.size() == 0;
     }
 
     public Set<Map.Entry<String, JsonElement>> entrySet() {
-        return members.entrySet();
+        return delegate.entrySet();
     }
 
     public Set<String> keySet() {
-        return members.keySet();
+        return delegate.keySet();
     }
 
     public Map<String, JsonElement> asMap() {
-        // It is safe to expose the underlying map because it disallows null keys and values
-        return members;
+        return delegate.asMap();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public JsonObject getAsJsonObject() {
-        // I will not apologise for this
-        JsonObject jsonObject = new JsonObject();
-        try {
-            Field membersField = JsonObject.class.getDeclaredField("members");
-            membersField.setAccessible(true);
-            for (Map.Entry<String, JsonElement> entry : members.entrySet()) {
-                ((LinkedTreeMap<String, JsonElement>) membersField.get(jsonObject)).put(entry.getKey(), entry.getValue());
-            }
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
-        return jsonObject;
+        return delegate.deepCopy();
     }
 
     @Override
@@ -240,12 +226,11 @@ public class JsonCompound extends JsonElement {
 
     @Override
     public boolean equals(Object o) {
-        return (o == this) || (o instanceof JsonCompound
-                && ((JsonCompound) o).members.equals(members));
+        return (o == this) || (o instanceof JsonCompound compound && compound.delegate.equals(delegate));
     }
 
     @Override
     public int hashCode() {
-        return members.hashCode();
+        return delegate.hashCode();
     }
 }

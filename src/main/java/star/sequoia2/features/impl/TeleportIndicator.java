@@ -28,10 +28,12 @@ public class TeleportIndicator extends ToggleFeature implements RenderUtilAccess
 
     public TeleportIndicator() {
         super("TeleportIndicator", "Renders where you will teleport on mage and shaman");
+        currentClass = Class.Mage;
+        max = mageRange.get();
     }
 
     public Class currentClass = Class.Mage; //start as something with range
-    double max = 0;
+    double max = -1;
 
     @Subscribe
     public void onRender3D(Render3DEvent event) {

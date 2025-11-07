@@ -82,11 +82,16 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
 
     private static final int   CACHE_SIZE    = 256;
     private static final long  DUP_WINDOW_MS = 1000L;
+    private static final long  RECENT_RETENTION_MS = 60_000L;
 
     private static final Map<Integer, Long> SEQ$RECENT =
             Collections.synchronizedMap(new LinkedHashMap<Integer, Long>(CACHE_SIZE, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<Integer, Long> eldest) {
+                    long now = System.currentTimeMillis();
+                    if (now - eldest.getValue() > RECENT_RETENTION_MS) {
+                        return true;
+                    }
                     return size() > CACHE_SIZE;
                 }
             });
@@ -178,6 +183,7 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
         long now = System.currentTimeMillis();
         int key = seq$keyFrom(msg);
         synchronized (SEQ$RECENT) {
+            SEQ$RECENT.entrySet().removeIf(entry -> now - entry.getValue() > RECENT_RETENTION_MS);
             Long last = SEQ$RECENT.get(key);
             if (last != null && (now - last) <= DUP_WINDOW_MS) {
                 return true;

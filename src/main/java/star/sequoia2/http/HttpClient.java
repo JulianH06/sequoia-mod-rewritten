@@ -25,6 +25,9 @@ public class HttpClient {
     }
 
     private void createClientPool() {
+        if (!httpClientPool.isEmpty()) {
+            return;
+        }
         for (int i = 0; i < POOL_SIZE; i++) {
             java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
             httpClientPool.put(client, false);

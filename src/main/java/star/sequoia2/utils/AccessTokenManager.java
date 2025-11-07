@@ -6,6 +6,8 @@ import star.sequoia2.client.SeqClient;
 import javax.crypto.SecretKey;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Properties;
@@ -13,23 +15,13 @@ import java.util.Properties;
 import static star.sequoia2.client.SeqClient.mc;
 
 public final class AccessTokenManager {
-    public static final String BASE_FOLDER_PATH = "sequoia" + File.separator;
     public static final String ACCESS_TOKEN_FILE_NAME = "access_token.properties";
     public static final String ACCESS_TOKEN_KEY = "SequoiaModAccessToken";
     public static final String ENV_FILE_NAME = ".env";
     public static final String ENCRYPTION_KEY_PROPERTY = "SEQUOIA_MOD_ENCRYPTION_KEY";
 
-    public static String getUserSpecificFolderPath() {
-        java.util.UUID uuid = mc.getSession() != null ? mc.getSession().getUuidOrNull() : null;
-        if (uuid == null) {
-            SeqClient.warn("Player UUID unavailable; using shared storage path.");
-            return BASE_FOLDER_PATH;
-        }
-        return BASE_FOLDER_PATH + uuid + File.separator;
-    }
-
     public static String getEncryptionKey() {
-        File envFile = new File(getUserSpecificFolderPath() + ENV_FILE_NAME);
+        File envFile = userDirectory().resolve(ENV_FILE_NAME).toFile();
         if (!envFile.exists()) {
             generateAndStoreEncryptionKey(envFile);
         }
@@ -68,7 +60,7 @@ public final class AccessTokenManager {
 
     public static void storeAccessToken(String token) {
         Properties properties = new Properties();
-        File tokenFile = new File(getUserSpecificFolderPath() + ACCESS_TOKEN_FILE_NAME);
+        File tokenFile = userDirectory().resolve(ACCESS_TOKEN_FILE_NAME).toFile();
 
         try {
             File parent = tokenFile.getParentFile();
@@ -106,7 +98,7 @@ public final class AccessTokenManager {
 
     public static String retrieveAccessToken() {
         Properties properties = new Properties();
-        File tokenFile = new File(getUserSpecificFolderPath() + ACCESS_TOKEN_FILE_NAME);
+        File tokenFile = userDirectory().resolve(ACCESS_TOKEN_FILE_NAME).toFile();
 
         try {
             if (tokenFile.exists()) {
@@ -133,13 +125,44 @@ public final class AccessTokenManager {
     }
 
     public static void invalidateAccessToken() {
-        File tokenFile = new File(getUserSpecificFolderPath() + ACCESS_TOKEN_FILE_NAME);
-        File parent = tokenFile.getParentFile();
-        if (parent != null && !parent.exists() && !parent.mkdirs())
-            SeqClient.warn("Failed to create directory for token file: " + parent.getAbsolutePath());
+        File tokenFile = userDirectory().resolve(ACCESS_TOKEN_FILE_NAME).toFile();
         if (tokenFile.exists() && !tokenFile.delete()) {
             SeqClient.warn("Failed to delete access token file: " + tokenFile.getAbsolutePath());
         } // i don't even care if this is insecure, blame dot jj or whoever originally wrote this
         SeqClient.debug("Access token was invalidated.");
+    }
+
+    private static Path userDirectory() {
+        Path base = resolveBaseDirectory();
+        String uuid = activeUuid();
+        Path userDir = base.resolve(uuid);
+        try {
+            Files.createDirectories(userDir);
+        } catch (IOException ignored) {}
+        return userDir;
+    }
+
+    private static Path resolveBaseDirectory() {
+        try {
+            if (SeqClient.getConfiguration() != null) {
+                File configDir = SeqClient.getConfiguration().configDirectory();
+                Path auth = configDir.toPath().resolve("auth");
+                Files.createDirectories(auth);
+                return auth;
+            }
+        } catch (IOException ignored) {}
+        Path fallback = mc.runDirectory.toPath().resolve("sequoia").resolve("auth");
+        try {
+            Files.createDirectories(fallback);
+        } catch (IOException ignored) {}
+        return fallback;
+    }
+
+    private static String activeUuid() {
+        if (mc.getSession() != null && mc.getSession().getUuidOrNull() != null) {
+            return mc.getSession().getUuidOrNull().toString();
+        }
+        String user = System.getProperty("user.name", "user");
+        return "offline-" + user;
     }
 }
