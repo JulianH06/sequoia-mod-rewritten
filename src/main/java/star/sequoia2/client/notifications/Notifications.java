@@ -3,15 +3,13 @@ package star.sequoia2.client.notifications;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
-import star.sequoia2.features.impl.Settings;
 
 import java.util.List;
 
 import static star.sequoia2.client.SeqClient.mc;
 
-public class Notifications implements FeaturesAccessor {
+public class Notifications {
 
     private Text lastMessage;
     private String lastSignature;
@@ -27,14 +25,13 @@ public class Notifications implements FeaturesAccessor {
     }
 
     public void sendMessage(Text message) {
-        sendMessage(message, String.valueOf(message));
+        sendMessage(message, message == null ? "" : String.valueOf(message));
     }
 
     /**
      *
      * @param message message to send
-     * @param sig to detect to override a duplicate message
-     * @READNIGGA NEVER USE THIS INSIDE A MESSAGE EVENT SUBSCRIBER, WILL RESULT IN STACKOVERFLOW.
+     * @param sig signature to suppress duplicates
      */
     public void sendMessage(Text message, String sig) {
         if (notReady()) return;
@@ -42,18 +39,16 @@ public class Notifications implements FeaturesAccessor {
             return;
         }
 
-        int color = feature(Settings.class).getNormalColorInt();
-        MutableText prefix = Text.literal("[Seq] ").withColor(color);
-        MutableText body = message.copy();
-        if (message.getStyle().getColor() == null) {
-            body = body.formatted(Formatting.WHITE);
+        MutableText rendered = message instanceof MutableText mt ? mt.copy() : message.copy();
+        if (rendered.getStyle().getColor() == null) {
+            rendered = rendered.formatted(Formatting.WHITE);
         }
-        MutableText rendered = prefix.append(body);
+
         mc.inGameHud.getChatHud().addMessage(rendered);
 
-        SeqClient.debug(message.getString());
+        SeqClient.debug(rendered.getString());
         lastSignature = sig;
-        lastMessage = message.copy();
+        lastMessage = rendered.copy();
     }
 
 

@@ -9,8 +9,8 @@ import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
-import star.sequoia2.client.notifications.Notifications;
 import star.sequoia2.http.HttpClients;
 
 import java.io.IOException;
@@ -36,6 +36,8 @@ public final class UpdateManager {
     private static final AtomicBoolean autoCheckCompleted = new AtomicBoolean(false);
 
     private static volatile ReleaseInfo cachedRelease;
+    private static final UpdateState UPDATE_STATE = UpdateState.load();
+    private static final NotificationsAccessor NOTIFIER = new NotificationsAccessor() {};
 
     private UpdateManager() {}
 
@@ -44,6 +46,7 @@ public final class UpdateManager {
             SeqClient.debug("Skipping update check: mod jar not resolved (likely dev environment).");
             return;
         }
+        cleanupBackup();
         if (!autoCheckQueued.compareAndSet(false, true)) return;
         SeqClient.SCHEDULER.schedule(UpdateManager::waitForWorldThenCheck, 5, TimeUnit.SECONDS);
     }
@@ -86,8 +89,10 @@ public final class UpdateManager {
                             announceUpdate(release);
                         } else {
                             Formatting color = manualTrigger ? Formatting.GREEN : Formatting.DARK_GREEN;
+                            String sig = (manualTrigger ? "manual" : "auto") + "-uptodate-" + release.displayVersion();
                             notifyUser(Text.literal("Sequoia is up to date (" + release.displayVersion() + ").")
-                                    .formatted(color));
+                                            .formatted(color),
+                                    sig);
                         }
                     });
                     if (opt.isEmpty() && manualTrigger) {
@@ -136,8 +141,12 @@ public final class UpdateManager {
     }
 
     private static boolean isNewerThanLocal(ReleaseInfo release) {
+        if (release == null || release.tag() == null) return false;
+        String tag = release.tag();
         String local = SeqClient.getVersion();
-        return release != null && release.tag() != null && !release.tag().equalsIgnoreCase(local);
+        String stored = UPDATE_STATE.lastInstalledTag();
+        if (tag.equalsIgnoreCase(local)) return false;
+        return stored == null || !tag.equalsIgnoreCase(stored);
     }
 
     private static void announceUpdate(ReleaseInfo release) {
@@ -220,6 +229,7 @@ public final class UpdateManager {
                     SeqClient.warn("Failed to delete backup " + backup);
                 }
             }
+            UPDATE_STATE.save(release.tag());
             SeqClient.info("Sequoia updated to " + release.displayVersion());
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -253,10 +263,19 @@ public final class UpdateManager {
     }
 
     private static void notifyUser(Text text) {
-        Notifications notifications = SeqClient.getNotifications();
-        if (notifications != null) {
-            notifications.sendMessage(SeqClient.prefix(text));
-        }
+        notifyUser(text, text == null ? "" : text.getString());
+    }
+
+    private static void notifyUser(Text text, String signature) {
+        NOTIFIER.notify(text, signature);
+    }
+
+    private static void cleanupBackup() {
+        if (SeqClient.getModJar() == null) return;
+        Path backup = SeqClient.getModJar().toPath().resolveSibling(SeqClient.getModJar().getName() + ".bak");
+        try {
+            Files.deleteIfExists(backup);
+        } catch (IOException ignored) {}
     }
 
     public interface FabricClientCommandSourceBridge {

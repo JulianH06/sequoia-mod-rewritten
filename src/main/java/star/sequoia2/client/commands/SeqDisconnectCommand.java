@@ -10,6 +10,7 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import star.sequoia2.accessors.FeaturesAccessor;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.command.Command;
 import star.sequoia2.client.types.command.suggestions.SuggestionProviders;
@@ -23,7 +24,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.arg
 import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.utils.AccessTokenManager.invalidateAccessToken;
 
-public class SeqDisconnectCommand extends Command implements FeaturesAccessor {
+public class SeqDisconnectCommand extends Command implements FeaturesAccessor, NotificationsAccessor {
     @Override
     public String getCommandName() {
         return "seqdisconnect";
@@ -55,11 +56,11 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor {
             invalidateAccessToken();
             ctx.getSource()
                     .sendFeedback(
-                            SeqClient.prefix(Text.translatable("sequoia.command.deletetoken.success")));
+                            prefixed(Text.translatable("sequoia.command.deletetoken.success")));
         } catch (Exception exception) {
             ctx.getSource()
                     .sendError(
-                            SeqClient.prefix(Text.translatable("sequoia.command.deletetoken.error")));
+                            prefixed(Text.translatable("sequoia.command.deletetoken.error")));
         }
     }
 
@@ -67,7 +68,7 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor {
         if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) {
             ctx.getSource()
                     .sendError(
-                            SeqClient.prefix(Text.translatable("sequoia.feature.webSocket.featureDisabled")));
+                            prefixed(Text.translatable("sequoia.feature.webSocket.featureDisabled")));
             return;
         }
 
@@ -75,20 +76,20 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor {
                 .whenComplete((isMember, ex) -> mc.execute(() -> {
                     if (ex != null || !Boolean.TRUE.equals(isMember)) {
                         ctx.getSource().sendError(
-                                SeqClient.prefix(Text.translatable("sequoia.command.notASequoiaGuildMember")));
+                                prefixed(Text.translatable("sequoia.command.notASequoiaGuildMember")));
                         return;
                     }
 
                     if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::getClient).isEmpty()
                             || !features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
                         ctx.getSource()
-                                .sendError(SeqClient.prefix(Text.translatable("sequoia.command.disconnect.notConnected")));
+                                .sendError(prefixed(Text.translatable("sequoia.command.disconnect.notConnected")));
                         return;
                     }
 
                     ctx.getSource()
                             .sendFeedback(
-                                    SeqClient.prefix(Text.translatable("sequoia.command.disconnect.disconnecting"))
+                                    prefixed(Text.translatable("sequoia.command.disconnect.disconnecting"))
 
                             );
                     features().getIfActive(WebSocketFeature.class).ifPresent(WebSocketFeature::closeIfNeeded);
@@ -97,14 +98,14 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor {
                                 if (features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getClient().isClosed()).orElse(true)) {
                                     ctx.getSource()
                                             .sendFeedback(
-                                                    SeqClient.prefix(
+                                                    prefixed(
                                                             Text.translatable("sequoia.command.disconnect.disconnected"))
                                             );
                                     return;
                                 }
 
                                 ctx.getSource()
-                                        .sendError(SeqClient.prefix(
+                                        .sendError(prefixed(
                                                 Text.translatable("sequoia.command.disconnect.failedToDisconnect")));
                             },
                             5);

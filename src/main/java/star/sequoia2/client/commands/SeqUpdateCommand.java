@@ -7,15 +7,12 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Formatting;
-import star.sequoia2.client.SeqClient;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.commands.SeqUpdateCommand.SourceBridge;
 import star.sequoia2.client.types.command.Command;
 import star.sequoia2.client.update.UpdateManager;
 
-import java.util.Optional;
-
-public class SeqUpdateCommand extends Command {
+public class SeqUpdateCommand extends Command implements NotificationsAccessor {
 
     @Override
     public String getCommandName() {
@@ -27,7 +24,7 @@ public class SeqUpdateCommand extends Command {
         return dispatcher.register(
                 ClientCommandManager.literal(getCommandName())
                         .executes(ctx -> {
-                            ctx.getSource().sendFeedback(SeqClient.prefix(Text.literal("Checking for updates...").formatted(Formatting.GRAY)));
+                            ctx.getSource().sendFeedback(prefixed(Text.literal("Checking for updates...").formatted(Formatting.GRAY)));
                             UpdateManager.checkForUpdates(true);
                             return 1;
                         })
@@ -39,7 +36,7 @@ public class SeqUpdateCommand extends Command {
         );
     }
 
-    public static class SourceBridge implements UpdateManager.FabricClientCommandSourceBridge {
+    public static class SourceBridge implements UpdateManager.FabricClientCommandSourceBridge, NotificationsAccessor {
         private final FabricClientCommandSource source;
 
         public SourceBridge(FabricClientCommandSource source) {
@@ -48,7 +45,7 @@ public class SeqUpdateCommand extends Command {
 
         @Override
         public void reply(String message, Formatting formatting) {
-            source.sendFeedback(SeqClient.prefix(Text.literal(message).formatted(formatting)));
+            source.sendFeedback(prefixed(Text.literal(message).formatted(formatting)));
         }
     }
 }
