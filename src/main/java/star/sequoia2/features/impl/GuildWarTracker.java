@@ -39,7 +39,7 @@ public class GuildWarTracker extends ToggleFeature {
 
     @Subscribe
     public void onChat(PacketEvent.PacketReceiveEvent event) {
-        if (!isActive() || !(event.packet() instanceof GameMessageS2CPacket packet) || packet.overlay()) {
+        if (!(event.packet() instanceof GameMessageS2CPacket packet) || packet.overlay()) {
             return;
         }
 
