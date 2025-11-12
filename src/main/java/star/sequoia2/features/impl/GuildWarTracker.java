@@ -106,8 +106,7 @@ public class GuildWarTracker extends ToggleFeature {
                 submittedAt,
                 context.startEpochMs > 0 ? context.startEpochMs : submittedAt,
                 uniqueWarrers,
-                new GGuildWarSubmissionWSMessage.Results(
-                        toWsStats(summary.initialStats()), toWsStats(summary.finalStats())));
+                new GGuildWarSubmissionWSMessage.Results(toWsStats(summary.stats())));
 
         webSocket.sendMessage(new GGuildWarSubmissionWSMessage(data));
         context.submissionSent = true;
@@ -122,12 +121,11 @@ public class GuildWarTracker extends ToggleFeature {
         }
 
         TowerStats initial = toStats(initialState);
-        TowerStats current = toStats(currentState);
         String territory = info.getTerritory() == null || info.getTerritory().isBlank()
                 ? "Unknown Territory"
                 : info.getTerritory();
         long durationSeconds = Math.max(0, info.getTotalLengthSeconds());
-        return new WarSummary(territory, initial, current, durationSeconds);
+        return new WarSummary(territory, initial, durationSeconds);
     }
 
     private TowerStats toStats(WarTowerState state) {
@@ -211,7 +209,7 @@ public class GuildWarTracker extends ToggleFeature {
         }
     }
 
-    private record WarSummary(String territory, TowerStats initialStats, TowerStats finalStats, long durationSeconds) {}
+    private record WarSummary(String territory, TowerStats stats, long durationSeconds) {}
 
     private record TowerStats(long damageLow, long damageHigh, double attackSpeed, long health, double defence) {}
 }

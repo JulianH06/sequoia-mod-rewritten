@@ -20,7 +20,7 @@ public class GGuildWarSubmissionWSMessage extends WSMessage {
             List<String> warrers,
             Results results) {}
 
-    public record Results(Stats starting, @SerializedName("final") Stats finalStats) {}
+    public record Results(Stats stats) {}
 
     public record Stats(Damage damage, double attack, long health, double defence) {}
 
