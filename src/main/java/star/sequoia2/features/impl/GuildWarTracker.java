@@ -28,6 +28,8 @@ public class GuildWarTracker extends ToggleFeature {
 
     private WarContext activeContext;
     private boolean playerWasDead;
+    private String lastProcessedBattleId;
+    private int lastProcessedStateHash;
 
     public GuildWarTracker() {
         super("GuildWarTracker", "Tracks guild war results and reports them to Sequoia services", true);
@@ -44,6 +46,15 @@ public class GuildWarTracker extends ToggleFeature {
         WarBattleInfo info = Models.GuildWarTower.getWarBattleInfo().orElse(null);
         if (info != null) {
             String battleId = buildBattleId(info);
+            int stateHash = hashState(info.getCurrentState());
+            if (activeContext != null
+                    && battleId.equals(lastProcessedBattleId)
+                    && stateHash == lastProcessedStateHash) {
+                return;
+            }
+            lastProcessedBattleId = battleId;
+            lastProcessedStateHash = stateHash;
+
             if (activeContext == null || !battleId.equals(activeContext.id)) {
                 activeContext = new WarContext(
                         battleId,
@@ -63,10 +74,16 @@ public class GuildWarTracker extends ToggleFeature {
                 submitWar(activeContext.info, activeContext);
             }
             activeContext = null;
+            lastProcessedBattleId = null;
+            lastProcessedStateHash = 0;
         }
     }
 
     private void detectPlayerDeath() {
+        if (activeContext == null || activeContext.submissionSent) {
+            playerWasDead = false;
+            return;
+        }
         boolean isDead = mc.player.isDead() || mc.player.getHealth() <= 0;
         if (!playerWasDead && isDead) {
             handlePlayerDeath();
@@ -196,6 +213,21 @@ public class GuildWarTracker extends ToggleFeature {
     private boolean withinRange(Vec3d playerPos, HadesUser user) {
         Vec3d other = new Vec3d(user.getX(), user.getY(), user.getZ());
         return playerPos.squaredDistanceTo(other) <= TRACKING_RADIUS_SQ;
+    }
+
+    private int hashState(WarTowerState state) {
+        if (state == null) {
+            return 0;
+        }
+        long damageLow = state.damage() == null ? 0 : state.damage().low();
+        long damageHigh = state.damage() == null ? 0 : state.damage().high();
+        int hash = Long.hashCode(damageLow);
+        hash = 31 * hash + Long.hashCode(damageHigh);
+        hash = 31 * hash + Double.hashCode(state.attackSpeed());
+        hash = 31 * hash + Long.hashCode(state.health());
+        hash = 31 * hash + Double.hashCode(state.defense());
+        hash = 31 * hash + Long.hashCode(state.timestamp());
+        return hash;
     }
 
     private static final class WarContext {
