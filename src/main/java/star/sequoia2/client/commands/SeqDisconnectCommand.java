@@ -18,6 +18,7 @@ import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.wynn.WynnUtils;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
@@ -65,7 +66,7 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor, N
     }
 
     private void sorter(CommandContext<FabricClientCommandSource> ctx) {
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
         if (wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
         } else {
             ctx.getSource()

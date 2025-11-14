@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static star.sequoia2.client.SeqClient.mc;
 
@@ -63,7 +64,7 @@ public class RTSWar extends ToggleFeature {
     @Subscribe
     public void onTick(PlayerTickEvent event) {
         long now = System.currentTimeMillis();
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        java.util.Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
 
         if (sendingLocation && mc.player != null) {
             if (wsFeature.map(f -> f.isActive() && f.isAuthenticated()).orElse(false)) {
@@ -106,7 +107,7 @@ public class RTSWar extends ToggleFeature {
     public record WarCommand(int type, int x, int y) {}
 
     public void sendGWarCmdMessage(int type, String affectedTeam, String[] affected, int[] coords, int warRole) {
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
         GWarCmdWSMessage message = new GWarCmdWSMessage(
                 new GWarCmdWSMessage.Data(
                         type,

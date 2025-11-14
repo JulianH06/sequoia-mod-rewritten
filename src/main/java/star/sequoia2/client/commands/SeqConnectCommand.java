@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
 import com.wynntils.core.components.Managers;
+import java.util.Optional;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.command.CommandRegistryAccess;
@@ -91,7 +92,7 @@ public class SeqConnectCommand extends Command implements FeaturesAccessor, Noti
 //    }
 
     private int auth(CommandContext<FabricClientCommandSource> ctx) {
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
         if (wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
             // continue
         } else {

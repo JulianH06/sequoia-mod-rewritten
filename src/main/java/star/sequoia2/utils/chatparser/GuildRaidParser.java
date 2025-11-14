@@ -12,6 +12,7 @@ import star.sequoia2.features.impl.ws.WebSocketFeature;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -110,7 +111,7 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
                             type, players, reporter, aspects, emeralds, xp, sr
                     );
             dispatch(new RaidCompleteFromChatEvent());
-            var wsFeature = features().getIfActive(WebSocketFeature.class);
+            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
             if (wsFeature.map(WebSocketFeature::isActive).orElse(false)
                     && wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false)) {
                 wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(new GGuildRaidWSMessage(payload)));

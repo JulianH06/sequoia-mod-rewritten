@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import org.java_websocket.client.WebSocketClient;
+import java.util.Optional;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
@@ -47,7 +48,7 @@ public class ClientCommand extends Command implements FeaturesAccessor, Notifica
     }
 
     private int sendClientCommand(CommandContext<FabricClientCommandSource> ctx, String cmd, String args) {
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
         if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
             ctx.getSource().sendError(
                     prefixed(Text.translatable("sequoia.feature.webSocket.featureDisabled")));

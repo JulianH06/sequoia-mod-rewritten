@@ -28,6 +28,7 @@ import star.sequoia2.settings.types.IntSetting;
 import star.sequoia2.utils.wynn.WynnUtils;
 
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -66,7 +67,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
 
     @Subscribe
     private void cancelPing(PacketEvent.PacketReceiveEvent event) {
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
         if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) return;
         if (!(event.packet() instanceof GameMessageS2CPacket packet) || packet.overlay()) return;
 
@@ -99,7 +100,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
 
     public void processGuildRewards() {
         SeqClient.debug("Starting to parse guild rewards");
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
 
         checkGuildRewards().thenAcceptAsync(rewardStorage -> {
                     if (rewardStorage == null){return;}

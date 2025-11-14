@@ -17,6 +17,7 @@ import star.sequoia2.client.types.ws.message.ws.GAuthWSMessage;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.wynn.WynnUtils;
 
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
@@ -45,7 +46,7 @@ public class AuthCommand extends Command implements FeaturesAccessor, Notificati
     private int auth(CommandContext<FabricClientCommandSource> ctx) {
         String code = ctx.getArgument("code", String.class);
         if (CODE_PATTERN.matcher(code).matches()) {
-            var wsFeature = features().getIfActive(WebSocketFeature.class);
+            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
             if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
                             ctx.getSource()
                                     .sendError(

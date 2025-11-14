@@ -17,6 +17,7 @@ import star.sequoia2.settings.types.BooleanSetting;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import static star.sequoia2.client.SeqClient.mc;
@@ -103,8 +104,8 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
         if (content == null || overlay) return;
         if (seq$shouldDrop(content)) return;
 
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
-        var chatHookFeature = features().getIfActive(ChatHookFeature.class);
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<ChatHookFeature> chatHookFeature = features().getIfActive(ChatHookFeature.class);
         boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
         boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
         boolean hookActive = chatHookFeature.map(ChatHookFeature::isActive).orElse(false);

@@ -7,6 +7,8 @@ import star.sequoia2.client.types.ws.handler.WSMessageHandler;
 import star.sequoia2.client.types.ws.message.ws.SCommandPipeWSMessage;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 
+import java.util.Optional;
+
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
 public class SCommandPipeWSMessageHandler extends WSMessageHandler implements FeaturesAccessor {
@@ -16,7 +18,7 @@ public class SCommandPipeWSMessageHandler extends WSMessageHandler implements Fe
 
     @Override
     public void handle() {
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
         if (StringUtils.equals("Invalid token", wsMessage.getData().getAsString())) {
             SeqClient.debug("Received invalid token response. Requesting a new token.");
             wsFeature.ifPresent(webSocketFeature -> webSocketFeature.authenticate(true));

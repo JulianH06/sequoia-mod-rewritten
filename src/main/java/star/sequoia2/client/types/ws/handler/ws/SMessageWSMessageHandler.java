@@ -15,6 +15,7 @@ import star.sequoia2.client.types.ws.message.ws.SMessageWSMessage;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.URLUtils;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 
 import static star.sequoia2.client.SeqClient.mc;
@@ -28,7 +29,7 @@ public class SMessageWSMessageHandler extends WSMessageHandler implements Featur
 
     @Override
     public void handle() {
-        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
         SMessageWSMessage sMessageWSMessage = (SMessageWSMessage) wsMessage;
         JsonElement sMessageWSMessageData = sMessageWSMessage.getData();
 

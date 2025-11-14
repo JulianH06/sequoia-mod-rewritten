@@ -7,6 +7,7 @@ import star.sequoia2.features.impl.ws.ChatHookFeature;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.TimeUtils;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,8 +32,8 @@ public class GuildMessageParser implements FeaturesAccessor {
     public void parseGuildMessage(String tex) {
         try {
             String username = null, nickname = null, guildMsg = null;
-            var wsFeature = features().getIfActive(WebSocketFeature.class);
-            var chatFeature = features().getIfActive(ChatHookFeature.class);
+            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+            Optional<ChatHookFeature> chatFeature = features().getIfActive(ChatHookFeature.class);
             boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
             boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
             boolean chatEnabled = chatFeature.map(ChatHookFeature::isActive).orElse(false);
