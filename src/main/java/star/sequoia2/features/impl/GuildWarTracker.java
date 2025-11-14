@@ -6,6 +6,8 @@ import com.wynntils.models.war.type.WarBattleInfo;
 import com.wynntils.models.war.type.WarTowerState;
 import com.wynntils.services.hades.HadesUser;
 import com.wynntils.utils.type.RangedValue;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -99,12 +101,15 @@ public class GuildWarTracker extends ToggleFeature {
                 ? List.of(mc.player.getGameProfile().getName())
                 : new ArrayList<>(new LinkedHashSet<>(context.warrers));
 
-        long submittedAt = System.currentTimeMillis();
+        long submittedAtMillis = System.currentTimeMillis();
+        String submittedAt = toRFC3339(submittedAtMillis);
+        String startTime = toRFC3339(context.startEpochMs > 0 ? context.startEpochMs : submittedAtMillis);
+
         GGuildWarSubmissionWSMessage.Data data = new GGuildWarSubmissionWSMessage.Data(
                 summary.territory(),
                 mc.player.getUuidAsString(),
                 submittedAt,
-                context.startEpochMs > 0 ? context.startEpochMs : submittedAt,
+                startTime,
                 uniqueWarrers,
                 new GGuildWarSubmissionWSMessage.Results(toWsStats(summary.stats())));
 
@@ -207,6 +212,10 @@ public class GuildWarTracker extends ToggleFeature {
             this.startEpochMs = startEpochMs;
             this.warrers = warrers == null ? new ArrayList<>() : new ArrayList<>(warrers);
         }
+    }
+
+    private String toRFC3339(long epochMillis) {
+        return DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(epochMillis));
     }
 
     private record WarSummary(String territory, TowerStats stats, long durationSeconds) {}

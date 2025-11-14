@@ -8,7 +8,6 @@ public enum WSMessageType {
     G_RAID_SUBMISSION,
     G_I_STATE_UPDATE,
     G_GUILD_WAR_SUBMISSION,
-    NOT_IMPLEMENTED_1,
     G_IDENTIFY,
     NOT_IMPLEMENTED_2,
     NOT_IMPLEMENTED_3,
@@ -29,8 +28,8 @@ public enum WSMessageType {
     S_SESSION_RESULT,
     S_IC3_DATA,
     S_BINARY_DATA,
-    S_RESERVED_7,
-    S_REWARD_DATA,
+    S_GUILD_WAR_SUBMISSION,
+    S_RESOURCE_DATA,
     S_RESERVED_9,
     S_DEBUG_MESSAGE,
 
@@ -60,7 +59,11 @@ public enum WSMessageType {
 
     S_REPLY,
 
-    G_TREASURY_EMERALD_ALERT;
+    G_KEEPERS_PING,
+    G_GUILD_BANK_EVENT,
+    G_GUILD_BANK_STATE,
+    G_GUILD_EVENT;
+
     public static WSMessageType fromValue(int value) {
         for (WSMessageType type : values()) {
             if (type.getValue() == value) {

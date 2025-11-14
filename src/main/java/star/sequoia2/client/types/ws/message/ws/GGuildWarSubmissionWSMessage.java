@@ -15,8 +15,8 @@ public class GGuildWarSubmissionWSMessage extends WSMessage {
     public record Data(
             String territory,
             @SerializedName("submitted_by") String submittedBy,
-            @SerializedName("submitted_at") long submittedAt,
-            @SerializedName("start_time") long startTime,
+            @SerializedName("submitted_at") String submittedAt,
+            @SerializedName("start_time") String startTime,
             List<String> warrers,
             Results results) {}
 
