@@ -5,7 +5,8 @@ public record ReleaseInfo(String tag,
                           String downloadUrl,
                           String htmlUrl,
                           String changelog,
-                          String publishedAt) {
+                          String publishedAt,
+                          UpdateChannel channel) {
 
     public String displayVersion() {
         return name != null && !name.isBlank() ? name : tag;

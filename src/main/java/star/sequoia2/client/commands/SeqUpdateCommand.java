@@ -10,6 +10,8 @@ import net.minecraft.util.Formatting;
 import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.commands.SeqUpdateCommand.SourceBridge;
 import star.sequoia2.client.types.command.Command;
+import star.sequoia2.client.update.ReleaseInfo;
+import star.sequoia2.client.update.UpdateChannel;
 import star.sequoia2.client.update.UpdateManager;
 
 public class SeqUpdateCommand extends Command implements NotificationsAccessor {
@@ -24,7 +26,10 @@ public class SeqUpdateCommand extends Command implements NotificationsAccessor {
         return dispatcher.register(
                 ClientCommandManager.literal(getCommandName())
                         .executes(ctx -> {
-                            ctx.getSource().sendFeedback(prefixed(Text.literal("Checking for updates...").formatted(Formatting.GRAY)));
+                            UpdateChannel channel = UpdateManager.getChannel();
+                            String cached = UpdateManager.getCachedRelease().map(ReleaseInfo::displayVersion).orElse("unknown");
+                            ctx.getSource().sendFeedback(prefixed(Text.literal("Channel: " + channel.displayName() + " (latest known: " + cached + ")").formatted(Formatting.GRAY)));
+                            ctx.getSource().sendFeedback(prefixed(Text.literal("Checking for " + channel.displayName() + " updates...").formatted(Formatting.GRAY)));
                             UpdateManager.checkForUpdates(true);
                             return 1;
                         })

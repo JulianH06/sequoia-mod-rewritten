@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class UpdateManager {
 
-    private static final String RELEASES_API = "https://api.github.com/repos/SequoiaWynncraft/sequoia-mod-rewritten/releases/latest";
+    private static final String RELEASES_API = "https://api.github.com/repos/SequoiaWynncraft/sequoia-mod-rewritten/releases";
 
     private static final AtomicBoolean checking = new AtomicBoolean(false);
     private static final AtomicBoolean installing = new AtomicBoolean(false);
@@ -36,10 +36,21 @@ public final class UpdateManager {
     private static final AtomicBoolean autoCheckCompleted = new AtomicBoolean(false);
 
     private static volatile ReleaseInfo cachedRelease;
+    private static volatile UpdateChannel activeChannel = UpdateChannel.STABLE;
     private static final UpdateState UPDATE_STATE = UpdateState.load();
     private static final NotificationsAccessor NOTIFIER = new NotificationsAccessor() {};
 
     private UpdateManager() {}
+
+    public static void setChannel(UpdateChannel channel) {
+        if (channel == null) channel = UpdateChannel.STABLE;
+        activeChannel = channel;
+        cachedRelease = null;
+    }
+
+    public static UpdateChannel getChannel() {
+        return activeChannel;
+    }
 
     public static void scheduleAutomaticCheck() {
         if (SeqClient.getModJar() == null) {
@@ -59,7 +70,7 @@ public final class UpdateManager {
             return;
         }
         autoCheckCompleted.set(true);
-        notifyUser(Text.literal("Checking for updates...").formatted(Formatting.GRAY));
+        notifyUser(Text.literal("Checking for " + activeChannel.displayName() + " updates...").formatted(Formatting.GRAY));
         checkForUpdates(false);
     }
 
@@ -89,8 +100,8 @@ public final class UpdateManager {
                             announceUpdate(release);
                         } else {
                             Formatting color = manualTrigger ? Formatting.GREEN : Formatting.DARK_GREEN;
-                            String sig = (manualTrigger ? "manual" : "auto") + "-uptodate-" + release.displayVersion();
-                            notifyUser(Text.literal("Sequoia is up to date (" + release.displayVersion() + ").")
+                            String sig = (manualTrigger ? "manual" : "auto") + "-uptodate-" + release.channel().name() + "-" + release.displayVersion();
+                            notifyUser(Text.literal(release.channel().displayName() + " channel is up to date (" + release.displayVersion() + ").")
                                             .formatted(color),
                                     sig);
                         }
@@ -102,55 +113,71 @@ public final class UpdateManager {
     }
 
     public static Optional<ReleaseInfo> getCachedRelease() {
-        return Optional.ofNullable(cachedRelease);
+        ReleaseInfo release = cachedRelease;
+        if (release == null || release.channel() != activeChannel) {
+            return Optional.empty();
+        }
+        return Optional.of(release);
     }
 
     private static Optional<ReleaseInfo> fetchLatestRelease() {
-        JsonObject json = HttpClients.UPDATE_API.getJson(RELEASES_API, JsonObject.class);
-        if (json == null) {
+        JsonArray releases = HttpClients.UPDATE_API.getJson(RELEASES_API, JsonArray.class);
+        if (releases == null) {
             return Optional.empty();
         }
 
-        String tag = json.has("tag_name") ? json.get("tag_name").getAsString() : "";
-        String name = json.has("name") ? json.get("name").getAsString() : tag;
-        String changelog = json.has("body") ? json.get("body").getAsString() : "";
-        String htmlUrl = json.has("html_url") ? json.get("html_url").getAsString() : "";
-        String published = json.has("published_at") ? json.get("published_at").getAsString() : "";
-
-        String downloadUrl = extractDownloadUrl(json.getAsJsonArray("assets"));
-        if (downloadUrl == null || downloadUrl.isBlank()) {
-            SeqClient.warn("Latest release has no downloadable assets");
-            return Optional.empty();
+        UpdateChannel channel = activeChannel;
+        for (JsonElement element : releases) {
+            if (!element.isJsonObject()) continue;
+            JsonObject json = element.getAsJsonObject();
+            String tag = json.has("tag_name") ? json.get("tag_name").getAsString() : "";
+            if (!tag.startsWith(channel.tagPrefix())) continue;
+            boolean prerelease = json.has("prerelease") && json.get("prerelease").getAsBoolean();
+            if (channel.requiresPrerelease() != prerelease) continue;
+            String downloadUrl = extractDownloadUrl(json.getAsJsonArray("assets"), channel.assetName());
+            if (downloadUrl == null || downloadUrl.isBlank()) {
+                continue;
+            }
+            String name = json.has("name") ? json.get("name").getAsString() : tag;
+            String changelog = json.has("body") ? json.get("body").getAsString() : "";
+            String htmlUrl = json.has("html_url") ? json.get("html_url").getAsString() : "";
+            String published = json.has("published_at") ? json.get("published_at").getAsString() : "";
+            return Optional.of(new ReleaseInfo(tag, name, downloadUrl, htmlUrl, changelog, published, channel));
         }
-
-        return Optional.of(new ReleaseInfo(tag, name, downloadUrl, htmlUrl, changelog, published));
+        return Optional.empty();
     }
 
-    private static String extractDownloadUrl(JsonArray assets) {
+    private static String extractDownloadUrl(JsonArray assets, String preferredName) {
         if (assets == null) return null;
+        String fallback = null;
         for (JsonElement element : assets) {
             if (!element.isJsonObject()) continue;
             JsonObject asset = element.getAsJsonObject();
             String name = asset.has("name") ? asset.get("name").getAsString() : "";
             if (!name.endsWith(".jar")) continue;
+            if (preferredName != null && !preferredName.isBlank() && name.equalsIgnoreCase(preferredName)) {
+                if (asset.has("browser_download_url")) {
+                    return asset.get("browser_download_url").getAsString();
+                }
+            }
             if (asset.has("browser_download_url")) {
-                return asset.get("browser_download_url").getAsString();
+                fallback = asset.get("browser_download_url").getAsString();
             }
         }
-        return null;
+        return fallback;
     }
 
     private static boolean isNewerThanLocal(ReleaseInfo release) {
         if (release == null || release.tag() == null) return false;
         String tag = release.tag();
         String local = SeqClient.getVersion();
-        String stored = UPDATE_STATE.lastInstalledTag();
+        String stored = UPDATE_STATE.lastInstalledTag(release.channel());
         if (tag.equalsIgnoreCase(local)) return false;
         return stored == null || !tag.equalsIgnoreCase(stored);
     }
 
     private static void announceUpdate(ReleaseInfo release) {
-        MutableText text = Text.literal("Update available: ")
+        MutableText text = Text.literal(release.channel().displayName() + " update available: ")
                 .formatted(Formatting.GOLD)
                 .append(Text.literal(release.displayVersion()).formatted(Formatting.AQUA))
                 .append(Text.literal(" – click to install").formatted(Formatting.GRAY))
@@ -190,7 +217,7 @@ public final class UpdateManager {
         Path modJarPath = SeqClient.getModJar().toPath();
         Path modsDir = modJarPath.getParent();
 
-        source.reply("Downloading " + release.displayVersion() + "...", Formatting.AQUA);
+        source.reply("Downloading " + release.channel().displayName() + " build " + release.displayVersion() + "...", Formatting.AQUA);
 
         CompletableFuture
                 .runAsync(() -> downloadAndReplace(modJarPath, modsDir, release))
@@ -229,7 +256,7 @@ public final class UpdateManager {
                     SeqClient.warn("Failed to delete backup " + backup);
                 }
             }
-            UPDATE_STATE.save(release.tag());
+            UPDATE_STATE.save(release.channel(), release.tag());
             SeqClient.info("Sequoia updated to " + release.displayVersion());
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
