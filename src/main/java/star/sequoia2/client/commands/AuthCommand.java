@@ -45,7 +45,8 @@ public class AuthCommand extends Command implements FeaturesAccessor, Notificati
     private int auth(CommandContext<FabricClientCommandSource> ctx) {
         String code = ctx.getArgument("code", String.class);
         if (CODE_PATTERN.matcher(code).matches()) {
-            if (!features().get(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) {
+            var wsFeature = features().getIfActive(WebSocketFeature.class);
+            if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
                             ctx.getSource()
                                     .sendError(
                                             prefixed(Text.translatable("sequoia.feature.webSocket.featureDisabled")));
@@ -60,7 +61,7 @@ public class AuthCommand extends Command implements FeaturesAccessor, Notificati
                             return;
                         }
 
-                        if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)) {
+                        if (wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false)) {
                             ctx.getSource()
                                     .sendError(
                                             prefixed(Text.translatable("sequoia.command.auth.alreadyAuthenticated")));
@@ -74,12 +75,12 @@ public class AuthCommand extends Command implements FeaturesAccessor, Notificati
                             return;
                         }
 
-                        if (!features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
-                            features().getIfActive(WebSocketFeature.class).ifPresent(WebSocketFeature::connectIfNeeded);
+                        if (!wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
+                            wsFeature.ifPresent(WebSocketFeature::connectIfNeeded);
                         }
 
                         GAuthWSMessage gAuthWSMessage = new GAuthWSMessage(code);
-                        features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(gAuthWSMessage));
+                        wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(gAuthWSMessage));
                         sentGAuthWSMessage = true;
                         ctx.getSource()
                                 .sendFeedback(

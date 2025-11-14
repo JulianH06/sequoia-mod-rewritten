@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static star.sequoia2.client.SeqClient.mc;
@@ -74,20 +75,14 @@ public final class SequoiaMemberCache {
                 loadFromDisk();
                 return; // don’t overwrite with empty
             }
-
-            Map<String, Entry> tmp = new HashMap<>();
-            Instant now = Instant.now();
-            for (String u : uuids) {
-                String name = resolveNameFromMojang(u);
-                Entry e = new Entry();
-                e.uuid = u;
-                e.username = name;
-                e.resolvedAtEpochSec = now.getEpochSecond();
-                tmp.put(u, e);
-            }
-            byUuid = tmp;
-            rebuildNameIndex();
-            persist();
+            CompletableFuture
+                    .supplyAsync(() -> resolveMembersParallel(uuids))
+                    .thenAccept(result -> {
+                        if (result.isEmpty()) return;
+                        byUuid = result;
+                        rebuildNameIndex();
+                        persist();
+                    });
         } catch (IOException ignored) {}
     }
     private static void loadFromDisk() throws IOException {
@@ -173,6 +168,22 @@ public final class SequoiaMemberCache {
         } catch (Exception e) {
             return Collections.emptySet();
         }
+    }
+
+    private static Map<String, Entry> resolveMembersParallel(Set<String> uuids) {
+        Map<String, Entry> tmp = new HashMap<>();
+        Instant now = Instant.now();
+        uuids.parallelStream().forEach(u -> {
+            String name = resolveNameFromMojang(u);
+            Entry e = new Entry();
+            e.uuid = u;
+            e.username = name;
+            e.resolvedAtEpochSec = now.getEpochSecond();
+            synchronized (tmp) {
+                tmp.put(u, e);
+            }
+        });
+        return tmp;
     }
 
     private static void persist() {

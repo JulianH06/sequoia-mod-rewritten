@@ -44,6 +44,8 @@ public class WebSocketFeature extends ToggleFeature {
     private boolean isFirstConnection = false;
     private boolean isAuthenticating = false;
     private boolean isAuthenticated = false;
+    private boolean reconnectPending = false;
+    private boolean manualDisconnect = false;
 
     public WebSocketFeature() {
         super("WebSocket", "Websocket settings" ,true);
@@ -85,6 +87,7 @@ public class WebSocketFeature extends ToggleFeature {
                     close();
                     return;
                 }
+                reconnectPending = false;
 
                 SeqClient.debug("WebSocket connection opened.");
                 authenticate();
@@ -134,6 +137,7 @@ public class WebSocketFeature extends ToggleFeature {
                     close();
                     return;
                 }
+                reconnectPending = false;
 
                 SeqClient.error("Error occurred in WebSocket connection", e);
                 setAuthenticating(false);
@@ -292,14 +296,20 @@ public class WebSocketFeature extends ToggleFeature {
         }
 
         if (client.isOpen()) {
+            manualDisconnect = true;
             client.close();
         }
 
         setAuthenticating(false);
         setAuthenticated(false);
+        reconnectPending = false;
     }
 
     public void tryReconnect(boolean respectAutoReconnectPreference) {
+        if (manualDisconnect) {
+            manualDisconnect = false;
+            return;
+        }
 
         if (respectAutoReconnectPreference && isActive() && !autoReconnect.get()) {
             return;
@@ -307,8 +317,12 @@ public class WebSocketFeature extends ToggleFeature {
 
         if (!Models.WorldState.onWorld() && !Models.WorldState.onHousing()) return;
 
+        if (reconnectPending) return;
+        reconnectPending = true;
+
         /* schedule a check 10 s (20 * 10 ticks) from now */
         SCHEDULER.schedule(() -> mc.execute(() -> {
+            reconnectPending = false;
             if (!isActive()) return;                // feature was disabled meanwhile
 
             if (client == null) initClient();        // create it lazily

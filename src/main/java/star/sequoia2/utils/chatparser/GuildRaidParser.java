@@ -110,9 +110,10 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
                             type, players, reporter, aspects, emeralds, xp, sr
                     );
             dispatch(new RaidCompleteFromChatEvent());
-            if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)
-                    || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)) {
-                features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(new GGuildRaidWSMessage(payload)));
+            var wsFeature = features().getIfActive(WebSocketFeature.class);
+            if (wsFeature.map(WebSocketFeature::isActive).orElse(false)
+                    && wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false)) {
+                wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(new GGuildRaidWSMessage(payload)));
             }
 
         } catch (Exception e) {

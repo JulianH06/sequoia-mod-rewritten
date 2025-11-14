@@ -3,6 +3,7 @@ package star.sequoia2.utils.chatparser;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.message.ws.GChatMessageWSMessage;
+import star.sequoia2.features.impl.ws.ChatHookFeature;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.TimeUtils;
 
@@ -30,6 +31,11 @@ public class GuildMessageParser implements FeaturesAccessor {
     public void parseGuildMessage(String tex) {
         try {
             String username = null, nickname = null, guildMsg = null;
+            var wsFeature = features().getIfActive(WebSocketFeature.class);
+            var chatFeature = features().getIfActive(ChatHookFeature.class);
+            boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
+            boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
+            boolean chatEnabled = chatFeature.map(ChatHookFeature::isActive).orElse(false);
 
             Matcher mh = GUILD_CHAT_HOVER.matcher(tex);
             if (mh.find()) {
@@ -68,7 +74,9 @@ public class GuildMessageParser implements FeaturesAccessor {
 //            Sequoia2.debug(String.format("[GUILD CHAT] %s%s: %s", username, nickname != null ? nickname : "", guildMsg));
             if (guildMsg.contains("  ")) return;
             if (username.isBlank() || guildMsg.isBlank()) return;
-            if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) return;
+            if (!wsEnabled) return;
+            if (!wsAuthenticated) return;
+            if (!chatEnabled) return;
 
             GChatMessageWSMessage payload = new GChatMessageWSMessage(
                     new GChatMessageWSMessage.Data(

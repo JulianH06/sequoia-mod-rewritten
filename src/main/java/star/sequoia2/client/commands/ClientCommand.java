@@ -47,13 +47,14 @@ public class ClientCommand extends Command implements FeaturesAccessor, Notifica
     }
 
     private int sendClientCommand(CommandContext<FabricClientCommandSource> ctx, String cmd, String args) {
-        if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) {
+        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
             ctx.getSource().sendError(
                     prefixed(Text.translatable("sequoia.feature.webSocket.featureDisabled")));
             return 1;
         }
 
-        WebSocketClient ws = features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::getClient).orElse(null);
+        WebSocketClient ws = wsFeature.map(WebSocketFeature::getClient).orElse(null);
         if (ws == null || !ws.isOpen()) {
             ctx.getSource().sendError(
                     prefixed(Text.translatable("sequoia.command.ws.notConnected")));
@@ -64,7 +65,7 @@ public class ClientCommand extends Command implements FeaturesAccessor, Notifica
         GClientCommandWSMessage.Data payload = new GClientCommandWSMessage.Data(cmd, args);
         GClientCommandWSMessage message = new GClientCommandWSMessage(payload);
 
-        features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(message));
+        wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(message));
 
         return 1;
     }

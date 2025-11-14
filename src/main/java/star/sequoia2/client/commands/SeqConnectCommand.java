@@ -91,7 +91,10 @@ public class SeqConnectCommand extends Command implements FeaturesAccessor, Noti
 //    }
 
     private int auth(CommandContext<FabricClientCommandSource> ctx) {
-        if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) {
+        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        if (wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
+            // continue
+        } else {
             ctx.getSource()
                     .sendError(
                             prefixed(Text.translatable("sequoia.feature.webSocket.featureDisabled")));
@@ -106,22 +109,23 @@ public class SeqConnectCommand extends Command implements FeaturesAccessor, Noti
                         return;
                     }
 
-                    if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::getClient).isEmpty()) {
-                        features().getIfActive(WebSocketFeature.class).ifPresent(WebSocketFeature::initClient);
+                    if (wsFeature.map(WebSocketFeature::getClient).isEmpty()) {
+                        wsFeature.ifPresent(WebSocketFeature::initClient);
                     }
 
-                    if (features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
+                    if (wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
                         ctx.getSource()
                                 .sendError(prefixed(Text.translatable("sequoia.command.connect.alreadyConnected")));
+                        return;
                     }
 
                     ctx.getSource()
                             .sendFeedback(
                                     prefixed(Text.translatable("sequoia.command.connect.connecting")));
-                    features().getIfActive(WebSocketFeature.class).ifPresent(WebSocketFeature::connectIfNeeded);
+                    wsFeature.ifPresent(WebSocketFeature::connectIfNeeded);
                     Managers.TickScheduler.scheduleLater(
                             () -> {
-                                if (!features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
+                                if (!wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
                                     ctx.getSource()
                                             .sendError(prefixed(
                                                     Text.translatable("sequoia.command.connect.failedToConnect")));

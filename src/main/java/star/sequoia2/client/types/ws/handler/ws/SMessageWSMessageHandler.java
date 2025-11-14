@@ -28,6 +28,7 @@ public class SMessageWSMessageHandler extends WSMessageHandler implements Featur
 
     @Override
     public void handle() {
+        var wsFeature = features().getIfActive(WebSocketFeature.class);
         SMessageWSMessage sMessageWSMessage = (SMessageWSMessage) wsMessage;
         JsonElement sMessageWSMessageData = sMessageWSMessage.getData();
 
@@ -35,7 +36,7 @@ public class SMessageWSMessageHandler extends WSMessageHandler implements Featur
             String serverMessageText = sMessageWSMessageData.getAsString();
             if (StringUtils.equals(serverMessageText, "Invalid or expired token provided.\\nVisit https://api.sequoia.ooo/oauth2 to obtain a new session.")) {
                 SeqClient.debug("Received authentication required message, reauthenticating.");
-                features().getIfActive(WebSocketFeature.class).ifPresent(WebSocketFeature::authenticate);
+                wsFeature.ifPresent(WebSocketFeature::authenticate);
                 return;
             }
 

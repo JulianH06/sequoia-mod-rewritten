@@ -12,6 +12,7 @@ import star.sequoia2.client.types.text.StyledText;
 import star.sequoia2.events.PacketEvent;
 import star.sequoia2.events.WynncraftLoginEvent;
 import star.sequoia2.features.ToggleFeature;
+import star.sequoia2.settings.types.BooleanSetting;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -102,23 +103,27 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
         if (content == null || overlay) return;
         if (seq$shouldDrop(content)) return;
 
+        var wsFeature = features().getIfActive(WebSocketFeature.class);
+        var chatHookFeature = features().getIfActive(ChatHookFeature.class);
+        boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
+        boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
+        boolean hookActive = chatHookFeature.map(ChatHookFeature::isActive).orElse(false);
+
         StyledText styledText = StyledText.fromComponent(content);
         String tex = teXParser().toTeX(styledText.stripAlignment());
 
         if (AUTO_CONNECT.matcher(tex).find()) {
             SeqClient.debug("parsing as login...");
             dispatch(new WynncraftLoginEvent());
-            if (features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getConnectOnJoin().get()).orElse(false)
-                    && !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
+            if (wsFeature.map(WebSocketFeature::getConnectOnJoin).map(BooleanSetting::get).orElse(false)
+                    && !wsAuthenticated
                     && mc.player != null) {
                 mc.player.networkHandler.sendCommand("seqconnect");
             }
             return;
         }
 
-        if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)
-                || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
-                || !features().getIfActive(ChatHookFeature.class).map(ChatHookFeature::isActive).orElse(false)) {
+        if (!wsEnabled || !wsAuthenticated || !hookActive) {
             return;
         }
 
