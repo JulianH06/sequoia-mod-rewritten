@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static star.sequoia2.client.SeqClient.mc;
 
@@ -63,9 +64,10 @@ public class RTSWar extends ToggleFeature {
     @Subscribe
     public void onTick(PlayerTickEvent event) {
         long now = System.currentTimeMillis();
+        java.util.Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
 
         if (sendingLocation && mc.player != null) {
-            if (features().getIfActive(WebSocketFeature.class).map(f -> f.isActive() && f.isAuthenticated()).orElse(false)) {
+            if (wsFeature.map(f -> f.isActive() && f.isAuthenticated()).orElse(false)) {
                 if (now - lastSendMs >= 500L) {
                     int[] ints = PosCodec.encode(List.of(new BlockPos(mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ())));
                     GIC3HWSMessage message = new GIC3HWSMessage(
@@ -77,7 +79,7 @@ public class RTSWar extends ToggleFeature {
                                     List.of("*")
                             )
                     );
-                    features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(message));
+                    wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(message));
                     lastSendMs = now;
                 }
             }
@@ -105,6 +107,7 @@ public class RTSWar extends ToggleFeature {
     public record WarCommand(int type, int x, int y) {}
 
     public void sendGWarCmdMessage(int type, String affectedTeam, String[] affected, int[] coords, int warRole) {
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
         GWarCmdWSMessage message = new GWarCmdWSMessage(
                 new GWarCmdWSMessage.Data(
                         type,
@@ -115,8 +118,8 @@ public class RTSWar extends ToggleFeature {
                 )
         );
 
-        if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false) || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)) {
-            features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(message));
+        if (wsFeature.map(WebSocketFeature::isActive).orElse(false) && wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false)) {
+            wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(message));
         }
     }
 

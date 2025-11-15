@@ -18,6 +18,7 @@ import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.wynn.WynnUtils;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
@@ -65,7 +66,9 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor, N
     }
 
     private void sorter(CommandContext<FabricClientCommandSource> ctx) {
-        if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) {
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+        if (wsFeature.map(WebSocketFeature::isActive).orElse(false)) {
+        } else {
             ctx.getSource()
                     .sendError(
                             prefixed(Text.translatable("sequoia.feature.webSocket.featureDisabled")));
@@ -80,8 +83,8 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor, N
                         return;
                     }
 
-                    if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::getClient).isEmpty()
-                            || !features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
+                    if (wsFeature.map(WebSocketFeature::getClient).isEmpty()
+                            || !wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isOpen()).orElse(false)) {
                         ctx.getSource()
                                 .sendError(prefixed(Text.translatable("sequoia.command.disconnect.notConnected")));
                         return;
@@ -92,10 +95,10 @@ public class SeqDisconnectCommand extends Command implements FeaturesAccessor, N
                                     prefixed(Text.translatable("sequoia.command.disconnect.disconnecting"))
 
                             );
-                    features().getIfActive(WebSocketFeature.class).ifPresent(WebSocketFeature::closeIfNeeded);
+                    wsFeature.ifPresent(WebSocketFeature::closeIfNeeded);
                     Managers.TickScheduler.scheduleLater(
                             () -> {
-                                if (features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getClient().isClosed()).orElse(true)) {
+                                if (wsFeature.map(webSocketFeature -> webSocketFeature.getClient().isClosed()).orElse(true)) {
                                     ctx.getSource()
                                             .sendFeedback(
                                                     prefixed(

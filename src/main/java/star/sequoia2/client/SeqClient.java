@@ -151,6 +151,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
+        features.get(Settings.class).ifPresent(Settings::applyUpdateChannelPreference);
 
         ClientCommandRegistrationCallback.EVENT.register(Commands::registerCommands);
 

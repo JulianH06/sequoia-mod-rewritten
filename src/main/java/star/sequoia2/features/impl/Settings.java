@@ -5,7 +5,13 @@ import lombok.Getter;
 import lombok.Setter;
 import mil.nga.color.Color;
 import org.lwjgl.glfw.GLFW;
+import net.minecraft.util.Formatting;
+import net.minecraft.text.Text;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
+import star.sequoia2.client.update.UpdateChannel;
+import star.sequoia2.client.update.UpdateManager;
+import star.sequoia2.events.SettingChanged;
 import star.sequoia2.events.input.KeyEvent;
 import star.sequoia2.features.Feature;
 import star.sequoia2.gui.Fonts;
@@ -17,7 +23,7 @@ import star.sequoia2.utils.render.Themes;
 import static star.sequoia2.client.SeqClient.mc;
 
 @Getter
-public class Settings extends Feature {
+public class Settings extends Feature implements NotificationsAccessor {
 
     public final KeybindSetting menuKeybind = settings().binding("GuiKey:", "Opens the ClickGui", Binding.withKey(GLFW.GLFW_KEY_O));
 
@@ -42,11 +48,14 @@ public class Settings extends Feature {
     FloatSetting btnGap = settings().number("ButtonGap", "", 3f, 1f, 5f);
     FloatSetting rounding = settings().number("Rounding", "", 3f, 0f, 8f);
 
+    EnumSetting<UpdateChannel> updateChannel = settings().options("UpdateChannel", "Choose which update channel to use", UpdateChannel.STABLE, UpdateChannel.class);
+
     @Setter
     public ClickGUIScreen clickGui;
 
     public Settings() {
         super("Settings", "Client settings");
+        UpdateManager.setChannel(updateChannel.get());
     }
 
     public int getNormalColorInt() {
@@ -77,12 +86,32 @@ public class Settings extends Feature {
         return colorAccent3.get();
     }
 
+    public UpdateChannel getUpdateChannel() {
+        return updateChannel.get();
+    }
+
+    public void applyUpdateChannelPreference() {
+        UpdateManager.setChannel(updateChannel.get());
+    }
+
     @Subscribe
     public void onKeyDown(KeyEvent event) {
         if (event.isKeyDown() && this.menuKeybind.get().matches(event) && mc.currentScreen == null) {
             event.cancel();
             clickGui = new ClickGUIScreen();
             mc.setScreen(clickGui);
+        }
+    }
+
+    @Subscribe
+    public void onSettingChanged(SettingChanged event) {
+        if (event.setting() == updateChannel) {
+            UpdateChannel channel = updateChannel.get();
+            UpdateManager.setChannel(channel);
+            if (channel == UpdateChannel.NIGHTLY) {
+                notify(Text.translatable("sequoia.update.channel.warning").formatted(Formatting.YELLOW));
+            }
+            UpdateManager.checkForUpdates(true);
         }
     }
 

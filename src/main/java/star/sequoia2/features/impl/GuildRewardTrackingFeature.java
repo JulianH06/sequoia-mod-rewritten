@@ -28,8 +28,10 @@ import star.sequoia2.settings.types.IntSetting;
 import star.sequoia2.utils.wynn.WynnUtils;
 
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,7 +68,8 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
 
     @Subscribe
     private void cancelPing(PacketEvent.PacketReceiveEvent event) {
-        if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) return;
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+        if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) return;
         if (!(event.packet() instanceof GameMessageS2CPacket packet) || packet.overlay()) return;
 
         String raw = packet.content().toString();
@@ -82,7 +85,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
                         mc.player.getName().getString()
                 )
         );
-        features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));
+        wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));
     }
     //                &b󏿼󐀆 &3GAZtheMiner rewarded &e1024 Emeralds&3 to cinfrascitizen
     //                &b󏿼󏿿󏿾 &3Shisouhan rewarded &ean Aspect&3 to LegendaryVirus
@@ -98,6 +101,7 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
 
     public void processGuildRewards() {
         SeqClient.debug("Starting to parse guild rewards");
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
 
         checkGuildRewards().thenAcceptAsync(rewardStorage -> {
                     if (rewardStorage == null){return;}
@@ -119,14 +123,14 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
                     }
 
                     if(emeraldValue>= 90 && sendPing.get()){
-                        if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) return;
+                        if (!wsFeature.map(WebSocketFeature::isActive).orElse(false)) return;
                         GTreasuryEmeraldAlertWSMessage payload = new GTreasuryEmeraldAlertWSMessage(
                                 new GTreasuryEmeraldAlertWSMessage.Data(
                                         true,
                                         mc.player.getName().getString()
                                 )
                         );
-                        features().getIfActive(WebSocketFeature.class).ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));
+                        wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(payload));
                     }
 
                 }
@@ -178,7 +182,9 @@ public class GuildRewardTrackingFeature extends ToggleFeature {
         }
 
         for (StyledText loreLine : LoreUtils.getLore(guildRewardsItem)) {
-            SeqClient.debug("Item: " + loreLine);
+            if (SeqClient.isDebugMode()) {
+                SeqClient.debug("Item: " + loreLine);
+            }
             if (loreLine.contains("Rewards are unavailable")){break;}
             Matcher emeraldsMatcher = GUILD_REWARDS_EMERALDS_PATTERN.matcher(loreLine.getString());
             Matcher tomesMatcher = GUILD_REWARDS_TOMES_PATTERN.matcher(loreLine.getString());
