@@ -187,7 +187,6 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         features.add(new EcoMessageFilter());
         features.add(new GuildRewardTrackingFeature());
         features.add(new GuildWarTracker());
-//        features.add(new RTSWar());
         //TODO: finish commented out features.
     }
 
