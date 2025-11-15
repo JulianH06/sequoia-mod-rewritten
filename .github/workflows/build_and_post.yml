@@ -43,10 +43,10 @@ jobs:
             -F "file=@build/libs/Seq.jar" \
             ${{ secrets.DISCORD_WEBHOOK_URL }}
 
-      - name: Create GitHub Release
+      - name: Create/Update GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: release-${{ github.run_number }}
-          name: Release ${{ github.run_number }}
-          body: "Automated build from commit ${{ github.sha }}"
+          tag_name: release
+          name: Stable Release
+          body: "Latest stable build from commit ${{ github.sha }}"
           files: build/libs/Seq.jar

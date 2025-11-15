@@ -131,7 +131,7 @@ public final class UpdateManager {
             if (!element.isJsonObject()) continue;
             JsonObject json = element.getAsJsonObject();
             String tag = json.has("tag_name") ? json.get("tag_name").getAsString() : "";
-            if (!tag.startsWith(channel.tagPrefix())) continue;
+            if (!tag.equals(channel.tagPrefix())) continue;
             boolean prerelease = json.has("prerelease") && json.get("prerelease").getAsBoolean();
             if (channel.requiresPrerelease() != prerelease) continue;
             String downloadUrl = extractDownloadUrl(json.getAsJsonArray("assets"), channel.assetName());
