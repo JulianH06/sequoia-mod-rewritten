@@ -3,20 +3,22 @@ package star.sequoia2.client.types.ws.handler.ws;
 import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
-import star.sequoia2.client.types.ws.handler.WSMessageHandler;
+import star.sequoia2.client.types.ws.message.WSMessage;
 import star.sequoia2.client.types.ws.message.ws.SCommandResultWSMessage;
 
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 import static star.sequoia2.utils.XMLUtils.extractTextFromXml;
 
-public class SCommandResultWSMessageHandler extends WSMessageHandler implements TeXParserAccessor, NotificationsAccessor {
-    public SCommandResultWSMessageHandler(String message) {
-        super(GSON.fromJson(message, SCommandResultWSMessage.class), message);
+public final class SCommandResultWSMessageHandler implements TeXParserAccessor, NotificationsAccessor {
+    private static final SCommandResultWSMessageHandler INSTANCE = new SCommandResultWSMessageHandler();
+    private SCommandResultWSMessageHandler() {}
+
+    public static void handle(WSMessage wsMessage) {
+        INSTANCE.handleInternal(wsMessage);
     }
 
-    @Override
-    public void handle() {
-        SCommandResultWSMessage msg = (SCommandResultWSMessage) wsMessage;
+    private void handleInternal(WSMessage wsMessage) {
+        SCommandResultWSMessage msg = GSON.fromJson(wsMessage.getData(), SCommandResultWSMessage.class);
         SCommandResultWSMessage.Data data = msg.getChatMessage();
         if (data == null) return;
 

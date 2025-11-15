@@ -107,15 +107,15 @@ public class WebSocketFeature extends ToggleFeature {
                     SeqClient.debug("Received WebSocket message: " + wsMessage);
 
                     switch (wsMessageType) {
-                        case S_CHANNEL_MESSAGE -> new SChannelMessageWSMessageHandler(s).handle();
-                        case S_SESSION_RESULT -> new SSessionResultWSMessageHandler(s).handle();
-                        case S_MESSAGE -> new SMessageWSMessageHandler(s).handle();
-                        case S_COMMAND_PIPE -> new SCommandPipeWSMessageHandler(s).handle();
-                        case S_BINARY_DATA -> new SBinaryDataWSMessageHandler(s).handle();
-                        case S_COMMAND_RESULT -> new SCommandResultWSMessageHandler(s).handle();
-                        case S_RESOURCE_DATA -> new SRewardWSMessageHandler(s).handle();
-                        case S_WAR_CMD -> new SWarCmdWSMessageHandler(s).handle();
-                        case S_IC3_DATA -> new SIC3WSMessageHandler(s).handle();
+                        case S_CHANNEL_MESSAGE -> SChannelMessageWSMessageHandler.handle(wsMessage);
+                        case S_SESSION_RESULT -> SSessionResultWSMessageHandler.handle(wsMessage);
+                        case S_MESSAGE -> SMessageWSMessageHandler.handle(wsMessage);
+                        case S_COMMAND_PIPE -> SCommandPipeWSMessageHandler.handle(wsMessage);
+                        case S_BINARY_DATA -> SBinaryDataWSMessageHandler.handle(wsMessage);
+                        case S_COMMAND_RESULT -> SCommandResultWSMessageHandler.handle(wsMessage);
+                        case S_RESOURCE_DATA -> SRewardWSMessageHandler.handle(wsMessage);
+                        case S_WAR_CMD -> SWarCmdWSMessageHandler.handle(wsMessage);
+                        case S_IC3_DATA -> SIC3WSMessageHandler.handle(wsMessage);
                         default -> SeqClient.warn("Unhandled WebSocket message type: " + wsMessageType);
                     }
                 } catch (Exception exception) {

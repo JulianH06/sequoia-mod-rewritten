@@ -3,7 +3,7 @@ package star.sequoia2.client.types.ws.handler.ws;
 import org.apache.commons.lang3.StringUtils;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
-import star.sequoia2.client.types.ws.handler.WSMessageHandler;
+import star.sequoia2.client.types.ws.message.WSMessage;
 import star.sequoia2.client.types.ws.message.ws.SSessionResultWSMessage;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.AccessTokenManager;
@@ -15,18 +15,20 @@ import static star.sequoia2.client.commands.SeqDisconnectCommand.deleteToken;
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
 
-public class SSessionResultWSMessageHandler extends WSMessageHandler implements FeaturesAccessor {
+public final class SSessionResultWSMessageHandler implements FeaturesAccessor {
     private static final Pattern JWT_PATTERN =
             Pattern.compile("^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$");
 
-    public SSessionResultWSMessageHandler(String message) {
-        super(GSON.fromJson(message, SSessionResultWSMessage.class), message);
+    private static final SSessionResultWSMessageHandler INSTANCE = new SSessionResultWSMessageHandler();
+    private SSessionResultWSMessageHandler() {}
+
+    public static void handle(WSMessage wsMessage) {
+        INSTANCE.handleInternal(wsMessage);
     }
 
-    @Override
-    public void handle() {
+    private void handleInternal(WSMessage wsMessage) {
         Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-        SSessionResultWSMessage sSessionResultWSMessage = GSON.fromJson(message, SSessionResultWSMessage.class);
+        SSessionResultWSMessage sSessionResultWSMessage = GSON.fromJson(wsMessage.getData(), SSessionResultWSMessage.class);
         SSessionResultWSMessage.Data sSessionResultWSMessageData = sSessionResultWSMessage.getSSessionResultData();
 
         if (sSessionResultWSMessageData.error()) {

@@ -2,19 +2,16 @@ package star.sequoia2.client.types.ws.handler.ws;
 
 
 import star.sequoia2.client.SeqClient;
-import star.sequoia2.client.types.ws.handler.WSMessageHandler;
 import star.sequoia2.client.types.ws.message.ws.SBinaryDataWSMessage;
+import star.sequoia2.client.types.ws.message.WSMessage;
 
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
-public class SBinaryDataWSMessageHandler extends WSMessageHandler {
-    public SBinaryDataWSMessageHandler(String message) {
-        super(GSON.fromJson(message, SBinaryDataWSMessage.class), message);
-    }
+public final class SBinaryDataWSMessageHandler {
+    private SBinaryDataWSMessageHandler() {}
 
-    @Override
-    public void handle() {
-        SBinaryDataWSMessage sBinaryDataWSMessage = GSON.fromJson(message, SBinaryDataWSMessage.class);
+    public static void handle(WSMessage wsMessage) {
+        SBinaryDataWSMessage sBinaryDataWSMessage = GSON.fromJson(wsMessage.getData(), SBinaryDataWSMessage.class);
         SBinaryDataWSMessage.Data sBinaryDataWSMessageData = sBinaryDataWSMessage.getSBinaryData();
 
         SeqClient.debug("Received SBinaryData: " + sBinaryDataWSMessageData);

@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static star.sequoia2.client.SeqClient.mc;
@@ -36,23 +37,32 @@ public final class GuildCache  {
 
     public static void init() {
         try {
-            if (Files.exists(FILE) &&
-                    Instant.now().minus(MAX_AGE).isBefore(Files.getLastModifiedTime(FILE).toInstant())) {
+            boolean fileExists = Files.exists(FILE);
+            boolean fresh = fileExists && Instant.now().minus(MAX_AGE).isBefore(Files.getLastModifiedTime(FILE).toInstant());
+
+            if (fileExists) {
                 loadFromDisk();
-            } else {
-                fetchFromApi();          // downloads + writes to disk
+                rebuildDerived();
             }
-            buildCanonical();
 
-            // names + prefixes, read-only copy
-            List<String> ids = new ArrayList<>(nameToPrefix.keySet());
-            ids.addAll(prefixToName.keySet());
-            GuildCache.ids = ids;
-
-            List<String> prefixOnlyIds = new ArrayList<>(prefixToName.keySet());
-            GuildCache.prefixOnlyIds = prefixOnlyIds;
+            if (!fresh) {
+                SeqClient.debug("Guild cache stale or missing, scheduling refresh.");
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        fetchFromApi();
+                        rebuildDerived();
+                    } catch (Exception e) {
+                        SeqClient.warn("Failed refreshing guild cache from API", e);
+                    }
+                });
+            }
 
             SeqClient.debug("Initialising guild cache");
+            if (ids == null) {
+                ids = List.of();
+                prefixOnlyIds = List.of();
+                canonical = Map.of();
+            }
         } catch (Exception e) {
             SeqClient.error("Failed initialising guild cache", e);
         }
@@ -113,6 +123,16 @@ public final class GuildCache  {
                 new GsonBuilder().setPrettyPrinting().create().toJson(
                         Map.of("nameToPrefix", n2p, "prefixToName", p2n, "fetched", Instant.now().getEpochSecond())
                 ));
+    }
+
+    private static void rebuildDerived() {
+        buildCanonical();
+
+        List<String> ids = new ArrayList<>(nameToPrefix.keySet());
+        ids.addAll(prefixToName.keySet());
+        GuildCache.ids = ids;
+
+        GuildCache.prefixOnlyIds = new ArrayList<>(prefixToName.keySet());
     }
 
     public static Collection<String> allIdentifiers() {

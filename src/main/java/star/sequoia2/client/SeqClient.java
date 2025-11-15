@@ -198,9 +198,12 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
             });
 
     public static MutableText prefix(Text text) {
+        Settings settingsFeature = features == null ? null : features.get(Settings.class).orElse(null);
+        int dark = settingsFeature != null ? settingsFeature.getTheme().get().getTheme().DARK : 0x6600cc;
+        int light = settingsFeature != null ? settingsFeature.getTheme().get().getTheme().LIGHT : 0xf3e6ff;
         return teXParser.parseMutableText("\\pill{%s}{%s}{Sequoia} \\+{»} ",
-                Integer.toHexString(features.get(Settings.class).map(settingsFeature -> settingsFeature.getTheme().get().getTheme().DARK).orElse(0x6600cc)),
-                Integer.toHexString(features.get(Settings.class).map(settingsFeature -> settingsFeature.getTheme().get().getTheme().LIGHT).orElse(0xf3e6ff))).append(text);
+                Integer.toHexString(dark),
+                Integer.toHexString(light)).append(text);
     }
 
     public static File getModStorageDir(String dirName) {
