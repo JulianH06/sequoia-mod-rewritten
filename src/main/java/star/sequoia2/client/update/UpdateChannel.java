@@ -1,8 +1,8 @@
 package star.sequoia2.client.update;
 
 public enum UpdateChannel {
-    STABLE("Stable", "release-", false, "Seq.jar"),
-    NIGHTLY("Nightly", "nightly-", true, "Seq-nightly.jar");
+    STABLE("Stable", "release", false, "Seq.jar"),
+    NIGHTLY("Nightly", "nightly", true, "Seq-nightly.jar");
 
     private final String displayName;
     private final String tagPrefix;
