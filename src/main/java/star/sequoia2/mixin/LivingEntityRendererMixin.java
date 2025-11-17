@@ -55,14 +55,16 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
 
     @Inject(method = "render(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V", at = @At("TAIL"))
     public void render(S livingEntityRenderState, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, CallbackInfo ci) {
-        if (mainLivingEntityThing != null && features().getIfActive(PartyHealthDisplay.class).map(PartyHealthDisplay::isActive).orElse(false)) {
-            renderHearts(mainLivingEntityThing, livingEntityRenderState.bodyYaw, 0, matrixStack, vertexConsumerProvider, i);
-        }
+        features().getIfActive(PartyHealthDisplay.class).ifPresent(display -> {
+            if (mainLivingEntityThing != null && display.isActive()) {
+                renderHearts(mainLivingEntityThing, livingEntityRenderState.bodyYaw, 0, matrixStack, vertexConsumerProvider, i, display);
+            }
+        });
     }
-    @Unique private void renderHearts(LivingEntity livingEntity, float yaw, float tickDelta, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light){
+    @Unique private void renderHearts(LivingEntity livingEntity, float yaw, float tickDelta, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light, PartyHealthDisplay display){
         float d = (float) Math.sqrt(this.dispatcher.getSquaredDistanceToCamera(livingEntity));
 
-        float scale = Math.max(0.0015f * d * features().getIfActive(PartyHealthDisplay.class).map(partyHealthDisplay -> partyHealthDisplay.getMin().get()).orElse(1.0f), 0.02f * features().getIfActive(PartyHealthDisplay.class).map(partyHealthDisplay -> partyHealthDisplay.getMax().get()).orElse(1.0f));
+        float scale = Math.max(0.0015f * d * display.getMin().get(), 0.02f * display.getMax().get());
 
         String name;
         try {
