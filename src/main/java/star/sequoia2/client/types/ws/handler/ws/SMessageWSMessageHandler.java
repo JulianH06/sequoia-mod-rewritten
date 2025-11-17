@@ -10,7 +10,7 @@ import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
-import star.sequoia2.client.types.ws.message.WSMessage;
+import star.sequoia2.client.types.ws.handler.WSMessageHandler;
 import star.sequoia2.client.types.ws.message.ws.SMessageWSMessage;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.URLUtils;
@@ -22,17 +22,15 @@ import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 import static star.sequoia2.utils.XMLUtils.extractTextFromXml;
 
-public final class SMessageWSMessageHandler implements FeaturesAccessor, TeXParserAccessor, NotificationsAccessor {
-    private static final SMessageWSMessageHandler INSTANCE = new SMessageWSMessageHandler();
-    private SMessageWSMessageHandler() {}
-
-    public static void handle(WSMessage wsMessage) {
-        INSTANCE.handleInternal(wsMessage);
+public class SMessageWSMessageHandler extends WSMessageHandler implements FeaturesAccessor, TeXParserAccessor, NotificationsAccessor {
+    public SMessageWSMessageHandler(String message) {
+        super(GSON.fromJson(message, SMessageWSMessage.class), message);
     }
 
-    private void handleInternal(WSMessage wsMessage) {
+    @Override
+    public void handle() {
         Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-        SMessageWSMessage sMessageWSMessage = GSON.fromJson(wsMessage.getData(), SMessageWSMessage.class);
+        SMessageWSMessage sMessageWSMessage = (SMessageWSMessage) wsMessage;
         JsonElement sMessageWSMessageData = sMessageWSMessage.getData();
 
         if (sMessageWSMessageData.isJsonPrimitive()) {

@@ -4,8 +4,8 @@ import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
+import star.sequoia2.client.types.ws.handler.WSMessageHandler;
 import star.sequoia2.client.types.ws.message.ws.SChannelMessageWSMessage;
-import star.sequoia2.client.types.ws.message.WSMessage;
 import star.sequoia2.features.impl.ws.DiscordChatBridgeFeature;
 
 import java.util.List;
@@ -13,21 +13,19 @@ import java.util.List;
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 import static star.sequoia2.utils.XMLUtils.extractTextFromXml;
 
-public final class SChannelMessageWSMessageHandler implements TeXParserAccessor, FeaturesAccessor, NotificationsAccessor {
-    private static final SChannelMessageWSMessageHandler INSTANCE = new SChannelMessageWSMessageHandler();
-    private SChannelMessageWSMessageHandler() {}
+public class SChannelMessageWSMessageHandler extends WSMessageHandler implements TeXParserAccessor, FeaturesAccessor, NotificationsAccessor {
+    public SChannelMessageWSMessageHandler(String message) {
+        super(GSON.fromJson(message, SChannelMessageWSMessage.class), message);
+    }
 
     private final String MESSAGE_FORMAT = "\\gradient%s{%s}\\={:} \\-{%s}";
 
-    public static void handle(WSMessage wsMessage) {
-        INSTANCE.handleInternal(wsMessage);
-    }
-
-    private void handleInternal(WSMessage wsMessage) {
+    @Override
+    public void handle() {
         SeqClient.debug(wsMessage.toString());
         if (features().getIfActive(DiscordChatBridgeFeature.class).map(DiscordChatBridgeFeature::isActive).orElse(false)
                 && features().getIfActive(DiscordChatBridgeFeature.class).map(discordChatBridgeFeature -> discordChatBridgeFeature.getSendDiscordMessageToChat().get()).orElse(false)) {
-            SChannelMessageWSMessage sChannelMessageWSMessage = GSON.fromJson(wsMessage.getData(), SChannelMessageWSMessage.class);
+            SChannelMessageWSMessage sChannelMessageWSMessage = (SChannelMessageWSMessage) wsMessage;
             SChannelMessageWSMessage.Data d = sChannelMessageWSMessage.getSChannelMessageData();
             String name = d.displayName() == null ? "" : d.displayName();
             String msg = d.message() == null ? "" : d.message();
