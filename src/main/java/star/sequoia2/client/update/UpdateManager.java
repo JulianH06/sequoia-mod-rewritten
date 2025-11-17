@@ -171,9 +171,20 @@ public final class UpdateManager {
         if (release == null || release.tag() == null) return false;
         String tag = release.tag();
         String local = SeqClient.getVersion();
-        String stored = UPDATE_STATE.lastInstalledTag(release.channel());
+        String storedTag = UPDATE_STATE.lastInstalledTag(release.channel());
+        String storedSignature = UPDATE_STATE.lastInstalledSignature(release.channel());
+        String currentSignature = release.signature();
         if (tag.equalsIgnoreCase(local)) return false;
-        return stored == null || !tag.equalsIgnoreCase(stored);
+        // Prefer signature comparison when available (static tags reuse the same tag name).
+        if (storedSignature != null) {
+            return !currentSignature.equals(storedSignature);
+        }
+        // Legacy installs only stored the tag. If the tag matches, still treat it as newer so we refresh
+        // and start writing signatures going forward.
+        if (storedTag != null && tag.equalsIgnoreCase(storedTag)) {
+            return true;
+        }
+        return storedTag == null || !tag.equalsIgnoreCase(storedTag);
     }
 
     private static void announceUpdate(ReleaseInfo release) {
@@ -256,7 +267,7 @@ public final class UpdateManager {
                     SeqClient.warn("Failed to delete backup " + backup);
                 }
             }
-            UPDATE_STATE.save(release.channel(), release.tag());
+            UPDATE_STATE.save(release.channel(), release.tag(), release.signature());
             SeqClient.info("Sequoia updated to " + release.displayVersion());
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
