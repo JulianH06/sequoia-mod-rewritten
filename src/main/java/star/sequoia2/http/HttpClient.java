@@ -1,37 +1,21 @@
 package star.sequoia2.http;
 
-import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import star.sequoia2.client.SeqClient;
 
 import java.net.http.HttpResponse;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentMap;
 
 public class HttpClient {
     private static final int[] OK_STATUS_CODES = {200, 201, 202, 203, 204, 205, 206, 207, 208, 226};
-    private static final int POOL_SIZE = 10;
     private static final Gson gson = new GsonBuilder().create();
-    private static final ConcurrentMap<java.net.http.HttpClient, Boolean> httpClientPool = Maps.newConcurrentMap();
+    private static final java.net.http.HttpClient CLIENT = java.net.http.HttpClient.newHttpClient();
 
-    protected HttpClient() {
-        createClientPool();
-    }
+    protected HttpClient() {}
 
     public static HttpClient newHttpClient() {
         return new HttpClient();
-    }
-
-    private void createClientPool() {
-        if (!httpClientPool.isEmpty()) {
-            return;
-        }
-        for (int i = 0; i < POOL_SIZE; i++) {
-            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-            httpClientPool.put(client, false);
-        }
     }
 
     private boolean isOkStatusCode(int statusCode) {
@@ -43,19 +27,6 @@ public class HttpClient {
         return false;
     }
 
-    private java.net.http.HttpClient getAvailableClient() {
-        for (Map.Entry<java.net.http.HttpClient, Boolean> entry : httpClientPool.entrySet()) {
-            java.net.http.HttpClient client = entry.getKey();
-            if (Boolean.FALSE.equals(entry.getValue())) {
-                httpClientPool.put(client, true);
-                return client;
-            }
-        }
-        java.net.http.HttpClient newClient = java.net.http.HttpClient.newHttpClient();
-        httpClientPool.put(newClient, true);
-        return newClient;
-    }
-
     /**
      * Sends a synchronous request using the provided HttpRequest.
      *
@@ -64,9 +35,8 @@ public class HttpClient {
      * @return the HTTP response, or null if an error occurred
      */
     private HttpResponse<String> sendSyncRequest(java.net.http.HttpRequest request, String context) {
-        java.net.http.HttpClient client = getAvailableClient();
         try {
-            return client.send(request, HttpResponse.BodyHandlers.ofString());
+            return CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             SeqClient.error("Thread interrupted while " + context, exception);
@@ -74,8 +44,6 @@ public class HttpClient {
         } catch (Exception exception) {
             SeqClient.error("Failed " + context, exception);
             return null;
-        } finally {
-            httpClientPool.put(client, false);
         }
     }
 
@@ -89,11 +57,7 @@ public class HttpClient {
     private CompletableFuture<HttpResponse<String>> sendAsyncRequest(
             java.net.http.HttpRequest request, String context) {
         try {
-            java.net.http.HttpClient client = getAvailableClient();
-            CompletableFuture<HttpResponse<String>> future =
-                    client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-            future.thenRun(() -> httpClientPool.put(client, false));
-            return future;
+            return CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString());
         } catch (Exception exception) {
             SeqClient.error("Failed " + context, exception);
             return null;

@@ -104,18 +104,13 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
         if (content == null || overlay) return;
         if (seq$shouldDrop(content)) return;
 
-        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
-        Optional<ChatHookFeature> chatHookFeature = features().getIfActive(ChatHookFeature.class);
-        boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
-        boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
-        boolean hookActive = chatHookFeature.map(ChatHookFeature::isActive).orElse(false);
-
-        StyledText styledText = StyledText.fromComponent(content);
-        String tex = teXParser().toTeX(styledText.stripAlignment());
-
-        if (AUTO_CONNECT.matcher(tex).find()) {
+        String raw = content.getString();
+        // Fast-path auto-connect without TeX parsing
+        if (AUTO_CONNECT.matcher(raw).find()) {
             SeqClient.debug("parsing as login...");
             dispatch(new WynncraftLoginEvent());
+            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+            boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
             if (wsFeature.map(WebSocketFeature::getConnectOnJoin).map(BooleanSetting::get).orElse(false)
                     && !wsAuthenticated
                     && mc.player != null) {
@@ -124,9 +119,18 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
             return;
         }
 
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<ChatHookFeature> chatHookFeature = features().getIfActive(ChatHookFeature.class);
+        boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
+        boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
+        boolean hookActive = chatHookFeature.map(ChatHookFeature::isActive).orElse(false);
+
         if (!wsEnabled || !wsAuthenticated || !hookActive) {
             return;
         }
+
+        StyledText styledText = StyledText.fromComponent(content);
+        String tex = teXParser().toTeX(styledText.stripAlignment());
 
         if ((tex.startsWith(GUILD_CHAT_PREFIX1) || tex.startsWith(GUILD_CHAT_PREFIX2)) &&
                 ((GUILD_CHAT_HOVER.matcher(tex).results().limit(2).count()

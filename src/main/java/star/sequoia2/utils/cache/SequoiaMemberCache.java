@@ -70,20 +70,25 @@ public final class SequoiaMemberCache {
                 loadFromDisk();
                 return;
             }
-            Set<String> uuids = fetchGuildUuids();
-            if (uuids.isEmpty()) {
-                loadFromDisk();
-                return; // don’t overwrite with empty
+
+            if (Files.exists(FILE)) {
+                loadFromDisk(); // fallback data while refresh happens
             }
+
             CompletableFuture
-                    .supplyAsync(() -> resolveMembersParallel(uuids))
+                    .supplyAsync(SequoiaMemberCache::fetchGuildUuids)
+                    .thenApply(uuids -> {
+                        if (uuids == null || uuids.isEmpty()) return Map.<String, Entry>of();
+                        return resolveMembersParallel(uuids);
+                    })
                     .thenAccept(result -> {
                         if (result.isEmpty()) return;
                         byUuid = result;
                         rebuildNameIndex();
                         persist();
                     });
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
     }
     private static void loadFromDisk() throws IOException {
         if (!Files.exists(FILE)) return;
