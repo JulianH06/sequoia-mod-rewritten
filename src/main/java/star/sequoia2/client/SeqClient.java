@@ -174,6 +174,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         features.add(new EcoMessageFilter());
         features.add(new GuildRewardTrackingFeature());
         features.add(new RTSWar());
+        features.add(new PartyFinder());
         //TODO: finish commented out features.
     }
 
@@ -186,8 +187,8 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
     public static MutableText prefix(Text text) {
         return teXParser.parseMutableText("\\pill{%s}{%s}{Sequoia} \\+{»} ",
-                Integer.toHexString(features.get(Settings.class).map(settingsFeature -> settingsFeature.getTheme().get().getTheme().DARK).orElse(0x6600cc)),
-                Integer.toHexString(features.get(Settings.class).map(settingsFeature -> settingsFeature.getTheme().get().getTheme().LIGHT).orElse(0xf3e6ff))).append(text);
+                Integer.toHexString(features.get(Settings.class).map(settingsFeature -> settingsFeature.theme.get().getTheme().DARK).orElse(0x6600cc)),
+                Integer.toHexString(features.get(Settings.class).map(settingsFeature -> settingsFeature.theme.get().getTheme().LIGHT).orElse(0xf3e6ff))).append(text);
     }
 
     public static File getModStorageDir(String dirName) {

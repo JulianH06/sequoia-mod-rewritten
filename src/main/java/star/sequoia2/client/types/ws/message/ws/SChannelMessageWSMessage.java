@@ -11,7 +11,7 @@ import java.util.Objects;
 
 import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
-public class SChannelMessageWSMessage extends WSMessage {
+public class    SChannelMessageWSMessage extends WSMessage {
     public SChannelMessageWSMessage(Data data) {
         super(WSMessageType.S_CHANNEL_MESSAGE.getValue(), GSON.toJsonTree(data));
     }
