@@ -15,12 +15,14 @@ public class Commands {
         new MeowCommand().registerAll(dispatcher, access);
         new GuildInfoCommand().registerAll(dispatcher, access);
         new CompareCommand().registerAll(dispatcher, access);
-        new ConnectCommand().registerAll(dispatcher, access);
-        new DisconnectCommand().registerAll(dispatcher, access);
+        new SeqConnectCommand().registerAll(dispatcher, access);
+        new SeqDisconnectCommand().registerAll(dispatcher, access);
+        new SeqUpdateCommand().registerAll(dispatcher, access);
         new PlayerInfoCommand().registerAll(dispatcher, access);
         new PlayerCharactersCommand().registerAll(dispatcher, access);
         new AuthCommand().registerAll(dispatcher, access);
         new DummyCommand().registerAll(dispatcher, access);
         new ClientCommand().registerAll(dispatcher, access);
+        new SeqDebugCommand().registerAll(dispatcher, access);
     }
 }

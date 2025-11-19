@@ -4,9 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.wynntils.core.components.Models;
-import com.wynntils.utils.mc.McUtils;
 import lombok.Getter;
-import net.minecraft.client.MinecraftClient;
 import org.apache.commons.lang3.StringUtils;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -46,6 +44,8 @@ public class WebSocketFeature extends ToggleFeature {
     private boolean isFirstConnection = false;
     private boolean isAuthenticating = false;
     private boolean isAuthenticated = false;
+    private boolean reconnectPending = false;
+    private boolean manualDisconnect = false;
 
     public WebSocketFeature() {
         super("WebSocket", "Websocket settings" ,true);
@@ -87,6 +87,7 @@ public class WebSocketFeature extends ToggleFeature {
                     close();
                     return;
                 }
+                reconnectPending = false;
 
                 SeqClient.debug("WebSocket connection opened.");
                 authenticate();
@@ -112,8 +113,9 @@ public class WebSocketFeature extends ToggleFeature {
                         case S_COMMAND_PIPE -> new SCommandPipeWSMessageHandler(s).handle();
                         case S_BINARY_DATA -> new SBinaryDataWSMessageHandler(s).handle();
                         case S_COMMAND_RESULT -> new SCommandResultWSMessageHandler(s).handle();
-                        case S_REWARD_DATA -> new SRewardWSMessageHandler(s).handle();
+                        case S_RESOURCE_DATA -> new SRewardWSMessageHandler(s).handle();
                         case S_WAR_CMD -> new SWarCmdWSMessageHandler(s).handle();
+                        case S_IC3_DATA -> new SIC3WSMessageHandler(s).handle();
                         default -> SeqClient.warn("Unhandled WebSocket message type: " + wsMessageType);
                     }
                 } catch (Exception exception) {
@@ -135,6 +137,7 @@ public class WebSocketFeature extends ToggleFeature {
                     close();
                     return;
                 }
+                reconnectPending = false;
 
                 SeqClient.error("Error occurred in WebSocket connection", e);
                 setAuthenticating(false);
@@ -202,7 +205,7 @@ public class WebSocketFeature extends ToggleFeature {
             return;
         }
 
-        if (McUtils.player() == null || StringUtils.isBlank(McUtils.player().getUuidAsString())) {
+        if (mc.player == null || StringUtils.isBlank(mc.player.getUuidAsString())) {
             SeqClient.warn("Player UUID is not available. WebSocket connection will not be established.");
             return;
         }
@@ -232,7 +235,7 @@ public class WebSocketFeature extends ToggleFeature {
 
             GIdentifyWSMessage gIdentifyWSMessage = new GIdentifyWSMessage(new GIdentifyWSMessage.Data(
                     AccessTokenManager.retrieveAccessToken(),
-                    McUtils.player().getUuidAsString(),
+                    mc.player.getUuidAsString(),
                     SeqClient.getVersionInt()));
             sendMessage(gIdentifyWSMessage);
         });
@@ -293,14 +296,20 @@ public class WebSocketFeature extends ToggleFeature {
         }
 
         if (client.isOpen()) {
+            manualDisconnect = true;
             client.close();
         }
 
         setAuthenticating(false);
         setAuthenticated(false);
+        reconnectPending = false;
     }
 
     public void tryReconnect(boolean respectAutoReconnectPreference) {
+        if (manualDisconnect) {
+            manualDisconnect = false;
+            return;
+        }
 
         if (respectAutoReconnectPreference && isActive() && !autoReconnect.get()) {
             return;
@@ -308,8 +317,12 @@ public class WebSocketFeature extends ToggleFeature {
 
         if (!Models.WorldState.onWorld() && !Models.WorldState.onHousing()) return;
 
+        if (reconnectPending) return;
+        reconnectPending = true;
+
         /* schedule a check 10 s (20 * 10 ticks) from now */
         SCHEDULER.schedule(() -> mc.execute(() -> {
+            reconnectPending = false;
             if (!isActive()) return;                // feature was disabled meanwhile
 
             if (client == null) initClient();        // create it lazily

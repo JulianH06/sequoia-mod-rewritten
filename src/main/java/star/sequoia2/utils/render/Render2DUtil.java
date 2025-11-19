@@ -31,6 +31,9 @@ public class Render2DUtil implements TextRendererAccessor {
     private static Float lastYaw = null;
     private static Float lastPitch = null;
     private float fovMultiplier = 1.0F;
+    private final Matrix4f cachedViewMatrix = new Matrix4f();
+    private final Matrix4f cachedProjectionMatrix = new Matrix4f();
+    private long cachedCameraFrame = -1;
 
     public Vector2f worldToScreen(Vector3f worldPos, Matrix4f viewMatrix, Matrix4f projectionMatrix, int screenWidth, int screenHeight, boolean allowBehind) {
         Vector4f clipSpacePos = new Vector4f(worldPos, 1.0f);
@@ -97,10 +100,11 @@ public class Render2DUtil implements TextRendererAccessor {
 
     public void render2DAtWorldPos(DrawContext context, double worldX, double worldY, double worldZ, float tickdelta, float scale, boolean behind, RenderCallback renderAction) {
         if (mc.cameraEntity == null) return;
-        Matrix4f viewMatrix = getViewMatrixFromEntity(mc.player, tickdelta);
+        Matrix4f view = getViewMatrixFromEntity(mc.player, tickdelta);
+        cachedViewMatrix.set(view);
         updateFov();
-        Matrix4f projectionMatrix = new Matrix4f().perspective((float) Math.toRadians(mc.options.getFov().getValue() * fovMultiplier), (float) mc.getWindow().getWidth() / mc.getWindow().getHeight(), 0.1f, 64000000f);
-        Vector2f screenPos = worldToScreen(new Vector3f((float) worldX, (float) worldY, (float) worldZ), viewMatrix, projectionMatrix, mc.getWindow().getFramebufferWidth(), mc.getWindow().getFramebufferHeight(), behind);
+        cachedProjectionMatrix.setPerspective((float) Math.toRadians(mc.options.getFov().getValue() * fovMultiplier), (float) mc.getWindow().getWidth() / mc.getWindow().getHeight(), 0.1f, 64000000f);
+        Vector2f screenPos = worldToScreen(new Vector3f((float) worldX, (float) worldY, (float) worldZ), cachedViewMatrix, cachedProjectionMatrix, mc.getWindow().getFramebufferWidth(), mc.getWindow().getFramebufferHeight(), behind);
         if (screenPos == null) return;
         MatrixStack matrices = context.getMatrices();
         matrices.push();

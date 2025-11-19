@@ -29,7 +29,7 @@ public class XMLUtils {
             for (int i = 0; i < children.getLength(); i++) {
                 Node n = children.item(i);
                 if (n.getNodeType() != Node.ELEMENT_NODE) continue;
-                if (!"TextData".equals(n.getNodeName())) continue; // skip nested hover text
+                if (!"TextData".equals(n.getNodeName())) continue;
 
                 String visible = collectDirectText(n);
                 if (visible.isEmpty()) continue;
@@ -40,23 +40,19 @@ public class XMLUtils {
 
                 String hover = extractHover(n);
                 Click click = extractClick(n);
-
-                String segment = visible;
+                String segment = escapeTeX(visible);
                 if (colourDec != null && !colourDec.isEmpty()) {
                     String hex = toRgbHex(colourDec);
-                    segment = "§#" + hex + "ff" + segment;
+                    segment = "\\color{" + hex + "}{" + segment + "}";
                 }
                 if (bold) {
-                    segment = "\\b{" + escapeTex(segment) + "}";
-                } else {
-                    segment = escapeTex(segment);
+                    segment = "\\b{" + segment + "}";
                 }
-
                 if (!hover.isEmpty()) {
-                    segment = "\\hover{" + escapeTex(hover) + "}{" + segment + "}";
+                    segment = "\\hover{" + escapeTeX(hover) + "}{" + segment + "}";
                 }
                 if (click != null) {
-                    segment = "\\click{" + click.action + "}{" + escapeTex(click.value) + "}{" + segment + "}";
+                    segment = "\\click{" + click.action + "}{" + escapeTeX(click.value) + "}{" + segment + "}";
                 }
 
                 out.append(segment);
@@ -155,7 +151,7 @@ public class XMLUtils {
         return hex;
     }
 
-    private static String escapeTex(String s) {
+    private static String escapeTeX(String s) {
         if (s == null || s.isEmpty()) return "";
         return s.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}");
     }

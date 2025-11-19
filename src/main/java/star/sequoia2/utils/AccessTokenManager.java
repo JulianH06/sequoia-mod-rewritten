@@ -6,6 +6,9 @@ import star.sequoia2.client.SeqClient;
 import javax.crypto.SecretKey;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Properties;
@@ -13,19 +16,13 @@ import java.util.Properties;
 import static star.sequoia2.client.SeqClient.mc;
 
 public final class AccessTokenManager {
-    public static final String BASE_FOLDER_PATH = "sequoia" + File.separator;
     public static final String ACCESS_TOKEN_FILE_NAME = "access_token.properties";
     public static final String ACCESS_TOKEN_KEY = "SequoiaModAccessToken";
     public static final String ENV_FILE_NAME = ".env";
     public static final String ENCRYPTION_KEY_PROPERTY = "SEQUOIA_MOD_ENCRYPTION_KEY";
 
-    public static String getUserSpecificFolderPath() {
-        String userUUID = mc.player.getUuidAsString();
-        return BASE_FOLDER_PATH + userUUID + File.separator;
-    }
-
     public static String getEncryptionKey() {
-        File envFile = new File(getUserSpecificFolderPath() + ENV_FILE_NAME);
+        File envFile = userDirectory().resolve(ENV_FILE_NAME).toFile();
         if (!envFile.exists()) {
             generateAndStoreEncryptionKey(envFile);
         }
@@ -45,16 +42,15 @@ public final class AccessTokenManager {
 
     public static void generateAndStoreEncryptionKey(File envFile) {
         File directory = envFile.getParentFile();
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
+        if (directory != null && !directory.exists() && !directory.mkdirs())
+            SeqClient.warn("Failed to create directory for encryption key: " + directory.getAbsolutePath());
 
         byte[] key = new byte[32];
         new SecureRandom().nextBytes(key);
 
         String encryptionKey = Base64.getUrlEncoder().encodeToString(key);
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(envFile, StandardCharsets.UTF_8, true))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(envFile, StandardCharsets.UTF_8))) {
             writer.write(ENCRYPTION_KEY_PROPERTY + "=" + encryptionKey + "\n");
             SeqClient.debug(
                     "Generated encryption key: " + encryptionKey + " and stored in " + envFile.getAbsoluteFile());
@@ -65,9 +61,12 @@ public final class AccessTokenManager {
 
     public static void storeAccessToken(String token) {
         Properties properties = new Properties();
-        File tokenFile = new File(getUserSpecificFolderPath() + ACCESS_TOKEN_FILE_NAME);
+        File tokenFile = userDirectory().resolve(ACCESS_TOKEN_FILE_NAME).toFile();
 
         try {
+            File parent = tokenFile.getParentFile();
+            if (parent != null && !parent.exists() && !parent.mkdirs())
+                SeqClient.warn("Failed to create directory for token file: " + parent.getAbsolutePath());
             String encryptionKey = getEncryptionKey();
             if (StringUtils.isBlank(encryptionKey)) {
                 SeqClient.error("Encryption key not found in .env file");
@@ -100,7 +99,7 @@ public final class AccessTokenManager {
 
     public static String retrieveAccessToken() {
         Properties properties = new Properties();
-        File tokenFile = new File(getUserSpecificFolderPath() + ACCESS_TOKEN_FILE_NAME);
+        File tokenFile = userDirectory().resolve(ACCESS_TOKEN_FILE_NAME).toFile();
 
         try {
             if (tokenFile.exists()) {
@@ -127,10 +126,69 @@ public final class AccessTokenManager {
     }
 
     public static void invalidateAccessToken() {
-        File tokenFile = new File(getUserSpecificFolderPath() + ACCESS_TOKEN_FILE_NAME);
-        if (tokenFile.exists()) {
-            tokenFile.delete();
+        File tokenFile = userDirectory().resolve(ACCESS_TOKEN_FILE_NAME).toFile();
+        if (tokenFile.exists() && !tokenFile.delete()) {
+            SeqClient.warn("Failed to delete access token file: " + tokenFile.getAbsolutePath());
         } // i don't even care if this is insecure, blame dot jj or whoever originally wrote this
         SeqClient.debug("Access token was invalidated.");
+    }
+
+    private static Path userDirectory() {
+        Path base = resolveBaseDirectory();
+        String uuid = activeUuid();
+        Path userDir = base.resolve(uuid);
+        migrateLegacyData(userDir);
+        try {
+            Files.createDirectories(userDir);
+        } catch (IOException ignored) {}
+        return userDir;
+    }
+
+    private static Path resolveBaseDirectory() {
+        try {
+            if (SeqClient.getConfiguration() != null) {
+                File configDir = SeqClient.getConfiguration().configDirectory();
+                Path auth = configDir.toPath().resolve("auth");
+                Files.createDirectories(auth);
+                return auth;
+            }
+        } catch (IOException ignored) {}
+        Path fallback = mc.runDirectory.toPath().resolve("sequoia").resolve("auth");
+        try {
+            Files.createDirectories(fallback);
+        } catch (IOException ignored) {}
+        return fallback;
+    }
+
+    private static Path legacyUserDirectory() {
+        Path runDir = mc != null && mc.runDirectory != null ? mc.runDirectory.toPath() : Path.of(".");
+        return runDir.resolve("sequoia").resolve(activeUuid());
+    }
+
+    private static void migrateLegacyData(Path targetDir) {
+        Path legacyDir = legacyUserDirectory();
+        if (legacyDir == null || legacyDir.equals(targetDir)) return;
+
+        migrateFile(legacyDir.resolve(ENV_FILE_NAME), targetDir.resolve(ENV_FILE_NAME));
+        migrateFile(legacyDir.resolve(ACCESS_TOKEN_FILE_NAME), targetDir.resolve(ACCESS_TOKEN_FILE_NAME));
+    }
+
+    private static void migrateFile(Path legacyPath, Path targetPath) {
+        if (!Files.exists(legacyPath) || Files.exists(targetPath)) return;
+        try {
+            Files.createDirectories(targetPath.getParent());
+            Files.move(legacyPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            SeqClient.debug("Migrated legacy credential file from " + legacyPath + " to " + targetPath);
+        } catch (IOException e) {
+            SeqClient.warn("Failed migrating legacy credential file: " + legacyPath, e);
+        }
+    }
+
+    private static String activeUuid() {
+        if (mc.getSession() != null && mc.getSession().getUuidOrNull() != null) {
+            return mc.getSession().getUuidOrNull().toString();
+        }
+        String user = System.getProperty("user.name", "user");
+        return "offline-" + user;
     }
 }

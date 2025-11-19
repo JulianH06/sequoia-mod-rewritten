@@ -7,9 +7,7 @@ import com.wynntils.handlers.container.scriptedquery.QueryStep;
 import com.wynntils.handlers.container.scriptedquery.ScriptedContainerQuery;
 import com.wynntils.handlers.container.type.ContainerContent;
 import com.wynntils.models.containers.ContainerModel;
-import com.wynntils.utils.mc.McUtils;
 import com.wynntils.utils.wynn.InventoryUtils;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.PlayerListHud;
 import net.minecraft.client.realms.dto.PlayerInfo;
 import net.minecraft.item.ItemStack;
@@ -147,7 +145,7 @@ public final class WynnUtils {
     }
 
     public static CompletableFuture<Boolean> isSequoiaGuildMember() {
-        return Services.Player.getPlayer(McUtils.playerName()).thenApplyAsync(playerResponse -> {
+        return Services.Player.getPlayer(mc.player.getName().getString()).thenApplyAsync(playerResponse -> {
             if (playerResponse == null) {
                 SeqClient.debug("playerResponse is null, querying Character Info for guild info");
 

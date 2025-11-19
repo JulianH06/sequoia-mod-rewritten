@@ -1,6 +1,7 @@
 package star.sequoia2.settings.types;
 
 
+import net.minecraft.util.math.MathHelper;
 import star.sequoia2.configuration.JsonCompound;
 
 public class FloatSetting extends NumberSetting<Float> {
@@ -15,7 +16,8 @@ public class FloatSetting extends NumberSetting<Float> {
 
     @Override
     public void load(JsonCompound compound) {
-        setInternal(compound.getFloat("value"));
+        float value = compound.getFloat("value");
+        setInternal(MathHelper.clamp(value, min, max));
     }
 
     @Override
