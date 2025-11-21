@@ -33,7 +33,10 @@ import star.sequoia2.utils.render.Render2DUtil;
 import star.sequoia2.utils.render.Render3DUtil;
 import star.sequoia2.utils.text.parser.TeXParser;
 import star.sequoia2.utils.wynn.HadesUtils;
+import star.sequoia2.client.update.UpdateManager;
 
+import java.net.URISyntaxException;
+import java.security.CodeSource;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executors;
@@ -42,7 +45,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class SeqClient implements ClientModInitializer, EventBusAccessor {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static String MOD_ID = "seq";
+    public static final String MOD_ID = "seq";
 
     @Getter
     public static File modJar;
@@ -60,7 +63,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     //enable and compile for testers
     public static boolean testMode = false;
 
-    public static boolean debugMode = true;
+    private static boolean debugMode = true;
 
     public static final MinecraftClient mc = MinecraftClient.getInstance();
 
@@ -111,7 +114,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
         try {
             configuration = new Configuration();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalStateException("could not read configuration", e);
         }
 
@@ -119,7 +122,8 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
         //Static init no need for instance in this case
         Threading tInit = new Threading();
-        Thread thread = new Thread(tInit);
+        Thread thread = new Thread(tInit, "Sequoia-CacheInit");
+        thread.setDaemon(true);
         thread.start();
         HadesUtils.init();
 
@@ -130,6 +134,8 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         notifications = new Notifications();
         render2DUtil = new Render2DUtil();
         render3DUtil = new Render3DUtil();
+
+        locateModJar();
     }
 
     @Subscribe(value = Preference.MAIN, priority = 1)
@@ -140,7 +146,12 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         subscribe(settings);
         registerFeatures();
 
-        settings.load(features);
+        try {
+            settings.load(features);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        features.get(Settings.class).ifPresent(Settings::applyUpdateChannelPreference);
 
         ClientCommandRegistrationCallback.EVENT.register(Commands::registerCommands);
 
@@ -148,6 +159,8 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
 
         initialized = true;
         LOGGER.info("Initialization complete.");
+
+        UpdateManager.scheduleAutomaticCheck();
     }
 
     @Subscribe(value = Preference.CALLER, priority = 2)
@@ -175,6 +188,7 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
         features.add(new GuildRewardTrackingFeature());
         features.add(new RTSWar());
         features.add(new PartyFinder());
+        features.add(new GuildWarTracker());
         //TODO: finish commented out features.
     }
 
@@ -186,9 +200,12 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
             });
 
     public static MutableText prefix(Text text) {
+        Settings settingsFeature = features == null ? null : features.get(Settings.class).orElse(null);
+        int dark = settingsFeature != null ? settingsFeature.getTheme().get().getTheme().DARK : 0x6600cc;
+        int light = settingsFeature != null ? settingsFeature.getTheme().get().getTheme().LIGHT : 0xf3e6ff;
         return teXParser.parseMutableText("\\pill{%s}{%s}{Sequoia} \\+{»} ",
-                Integer.toHexString(features.get(Settings.class).map(settingsFeature -> settingsFeature.theme.get().getTheme().DARK).orElse(0x6600cc)),
-                Integer.toHexString(features.get(Settings.class).map(settingsFeature -> settingsFeature.theme.get().getTheme().LIGHT).orElse(0xf3e6ff))).append(text);
+                Integer.toHexString(dark),
+                Integer.toHexString(light)).append(text);
     }
 
     public static File getModStorageDir(String dirName) {
@@ -218,6 +235,35 @@ public class SeqClient implements ClientModInitializer, EventBusAccessor {
     public static void debug(String message) {
         if (debugMode) {
             LOGGER.info("[VERBOSE] {}", message);
+        }
+    }
+
+    public static void setDebugMode(boolean enabled) {
+        debugMode = enabled;
+        LOGGER.info("Debug logging {}", enabled ? "enabled" : "disabled");
+    }
+
+    public static boolean isDebugMode() {
+        return debugMode;
+    }
+
+    private void locateModJar() {
+        if (modJar != null) return;
+        CodeSource source = SeqClient.class.getProtectionDomain().getCodeSource();
+        if (source == null) {
+            LOGGER.info("Mod code source unavailable; update installer disabled for this session.");
+            return;
+        }
+        try {
+            File location = new File(source.getLocation().toURI());
+            if (location.isFile()) {
+                modJar = location;
+                LOGGER.info("Detected Sequoia jar at {}", modJar.getAbsolutePath());
+            } else {
+                LOGGER.info("Sequoia is running from {} (not a jar); update installer disabled.", location);
+            }
+        } catch (URISyntaxException e) {
+            LOGGER.warn("Failed to resolve mod jar location", e);
         }
     }
 }

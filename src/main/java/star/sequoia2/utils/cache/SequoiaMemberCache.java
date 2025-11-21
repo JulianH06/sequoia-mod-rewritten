@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static star.sequoia2.client.SeqClient.mc;
@@ -42,6 +43,7 @@ public final class SequoiaMemberCache {
 
     private static final Path FILE = mc.runDirectory
             .toPath().resolve("sequoia/cache/sequoia_members.json");
+    private static final Duration MAX_CACHE_AGE = Duration.ofHours(1);
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final HttpClient HTTP = HttpClient.newBuilder()
@@ -64,40 +66,54 @@ public final class SequoiaMemberCache {
     public static void init() {
         try {
             Files.createDirectories(FILE.getParent());
-            Set<String> uuids = fetchGuildUuids();
-            if (uuids.isEmpty()) {
-                if (Files.exists(FILE)) {
-                    try (Reader r = Files.newBufferedReader(FILE, StandardCharsets.UTF_8)) {
-                        List<Entry> list = GSON.fromJson(r, ENTRY_LIST);
-                        if (list != null) {
-                            Map<String, Entry> tmp = new HashMap<>();
-                            for (Entry e : list) {
-                                if (e == null || e.uuid == null) continue;
-                                String u = normalizeUuid(e.uuid);
-                                if (u != null) { tmp.put(u, e); }
-                            }
-                            byUuid = tmp;
-                            rebuildNameIndex();
-                        }
-                    }
-                }
-                return; // don’t overwrite with empty
+            if (cacheFresh()) {
+                loadFromDisk();
+                return;
             }
 
+            if (Files.exists(FILE)) {
+                loadFromDisk(); // fallback data while refresh happens
+            }
+
+            CompletableFuture
+                    .supplyAsync(SequoiaMemberCache::fetchGuildUuids)
+                    .thenApply(uuids -> {
+                        if (uuids == null || uuids.isEmpty()) return Map.<String, Entry>of();
+                        return resolveMembersParallel(uuids);
+                    })
+                    .thenAccept(result -> {
+                        if (result.isEmpty()) return;
+                        byUuid = result;
+                        rebuildNameIndex();
+                        persist();
+                    });
+        } catch (IOException ignored) {
+        }
+    }
+    private static void loadFromDisk() throws IOException {
+        if (!Files.exists(FILE)) return;
+        try (Reader r = Files.newBufferedReader(FILE, StandardCharsets.UTF_8)) {
+            List<Entry> list = GSON.fromJson(r, ENTRY_LIST);
+            if (list == null) return;
             Map<String, Entry> tmp = new HashMap<>();
-            Instant now = Instant.now();
-            for (String u : uuids) {
-                String name = resolveNameFromMojang(u);
-                Entry e = new Entry();
-                e.uuid = u;
-                e.username = name;
-                e.resolvedAtEpochSec = now.getEpochSecond();
-                tmp.put(u, e);
+            for (Entry e : list) {
+                if (e == null || e.uuid == null) continue;
+                String u = normalizeUuid(e.uuid);
+                if (u != null) { tmp.put(u, e); }
             }
             byUuid = tmp;
             rebuildNameIndex();
-            persist();
-        } catch (IOException ignored) {}
+        }
+    }
+
+    private static boolean cacheFresh() {
+        if (!Files.exists(FILE)) return false;
+        try {
+            Instant modified = Files.getLastModifiedTime(FILE).toInstant();
+            return Instant.now().isBefore(modified.plus(MAX_CACHE_AGE));
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
     public static boolean isSequoiaMember(String username) {
@@ -157,6 +173,22 @@ public final class SequoiaMemberCache {
         } catch (Exception e) {
             return Collections.emptySet();
         }
+    }
+
+    private static Map<String, Entry> resolveMembersParallel(Set<String> uuids) {
+        Map<String, Entry> tmp = new HashMap<>();
+        Instant now = Instant.now();
+        uuids.parallelStream().forEach(u -> {
+            String name = resolveNameFromMojang(u);
+            Entry e = new Entry();
+            e.uuid = u;
+            e.username = name;
+            e.resolvedAtEpochSec = now.getEpochSecond();
+            synchronized (tmp) {
+                tmp.put(u, e);
+            }
+        });
+        return tmp;
     }
 
     private static void persist() {

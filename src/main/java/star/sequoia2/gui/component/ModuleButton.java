@@ -149,11 +149,6 @@ public class ModuleButton extends RelativeComponent implements SettingsAccessor,
                 open = !open;
             } else if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && feature instanceof ToggleFeature toggleModule) {
                 toggleModule.toggle();
-                try {
-                    configuration().save();
-                } catch (IOException e) {
-                    LOGGER.error("Could not save configuration", e);
-                }
             }
         }
 

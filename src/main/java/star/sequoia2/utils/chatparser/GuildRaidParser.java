@@ -1,6 +1,5 @@
 package star.sequoia2.utils.chatparser;
 
-import com.wynntils.utils.mc.McUtils;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
@@ -13,10 +12,12 @@ import star.sequoia2.features.impl.ws.WebSocketFeature;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.features.impl.ws.ChatHookFeature.remove_formatting;
 import static star.sequoia2.utils.cache.SequoiaMemberCache.isSequoiaMember;
 
@@ -24,7 +25,7 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
     // \hover{<hoverText>}{<visible>}
     private static final Pattern HOVER = Pattern.compile("\\\\hover\\{([^}]*)}\\{([^}]*)}");
     // "<nick>'s real name is <user>"
-    private static final Pattern REALNAME = Pattern.compile("(?i)(.*?)'?s\\s+real\\s+name\\s+is\\s+(.*)");
+    private static final Pattern REALNAME = Pattern.compile("(?i)(.*?)['’]s?\\s+real\\s+name\\s+is\\s+(.+)");
 
     // finished <raid name> and claimed ...
     private static final Pattern RAID_NAME = Pattern.compile("(?i)finished\\s+(.*?)\\s+and\\s+claimed");
@@ -101,7 +102,7 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
 
             SeqClient.debug(type.getDisplayName());
 
-            UUID reporter = McUtils.player().getUuid();
+            UUID reporter = mc.player.getUuid();
 
             if (reporter == null) return;
 
@@ -110,9 +111,10 @@ public class GuildRaidParser implements FeaturesAccessor, EventBusAccessor {
                             type, players, reporter, aspects, emeralds, xp, sr
                     );
             dispatch(new RaidCompleteFromChatEvent());
-            if (features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)
-                    || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)) {
-                features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(new GGuildRaidWSMessage(payload)));
+            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+            if (wsFeature.map(WebSocketFeature::isActive).orElse(false)
+                    && wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false)) {
+                wsFeature.ifPresent(webSocketFeature -> webSocketFeature.sendMessage(new GGuildRaidWSMessage(payload)));
             }
 
         } catch (Exception e) {

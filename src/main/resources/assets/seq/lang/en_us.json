@@ -37,7 +37,7 @@
   "text.config.sequoia2.option.discordChatBridgeFeature.sendInGameGuildChatMessagesToDiscord": "Send messages to discord",
   "text.config.sequoia2.option.discordChatBridgeFeature.sendDiscordMessagesToInGameChat": "Receive messages from discord",
   "text.config.sequoia2.option.webSocketFeature.connectOnJoin": "Connect on Join",
-  "text.config.sequoia2.option.webSocketFeature.connectOnJoin.tooltip": "Runs /connect command once after joining wynncraft.",
+  "text.config.sequoia2.option.webSocketFeature.connectOnJoin.tooltip": "Runs /seqconnect command once after joining wynncraft.",
   "text.config.sequoia2.option.webSocketFeature.autoReconnect": "Auto reconnect",
   "text.config.sequoia2.option.webSocketFeature.autoReconnect.tooltip": "Attempts to reconnect to the server automatically\nif the connection is lost.",
   "text.config.sequoia2.option.webSocketFeature.enabled": "Status",
@@ -48,6 +48,10 @@
   "text.config.sequoia2.option.webSocketFeature.relayLocationServiceData": "Relay location service data",
   "text.config.sequoia2.option.webSocketFeature.relayLocationServiceData.tooltip": "Shares your location data with the server. This\nincludes the server you are on, and the\ncoordinates of your character. It is sent\nevery 10 minutes.",
   "text.config.sequoia2.option.webSocketFeature.relayLootPoolData": "Relay loot pool data",
+  "text.config.sequoia2.option.settings.UpdateChannel": "Update Channel",
+  "text.config.sequoia2.option.settings.UpdateChannel.tooltip": "Switch between Stable and Nightly builds.",
+  "text.config.sequoia2.enum.updateChannel.STABLE": "Stable",
+  "text.config.sequoia2.enum.updateChannel.NIGHTLY": "Nightly",
   "text.config.sequoia2.option.chatHookFeature.enabled": "Enabled",
   "text.config.sequoia2.option.chatHookFeature.guildRaid": "Guild raid messages",
   "text.config.sequoia2.option.chatHookFeature.abilityCD": "Ability cooldown messages",
@@ -147,6 +151,7 @@
   "sequoia.command.disconnect.disconnecting": "Disconnecting...",
   "sequoia.command.disconnect.disconnected": "You have disconnected.",
   "sequoia.command.disconnect.failedToDisconnect": "Failed to disconnect... check your logs if this issue persists.",
-  "sequoia.command.notAuthenticated": "You must authenticate with /connect before using this command.",
-  "sequoia.command.ws.notConnected": "You're not connected to Sequoia! Run /connect, then try again."
+  "sequoia.command.notAuthenticated": "You must authenticate with /seqconnect before using this command.",
+  "sequoia.command.ws.notConnected": "You're not connected to Sequoia! Run /seqconnect, then try again.",
+  "sequoia.update.channel.warning": "Nightly builds are experimental and may be unstable."
 }

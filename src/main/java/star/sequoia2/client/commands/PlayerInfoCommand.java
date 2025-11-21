@@ -9,6 +9,7 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.StringUtils;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.services.wynn.player.PlayerResponse;
@@ -28,7 +29,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.arg
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 import static star.sequoia2.client.commands.PlayerCharactersCommand.ICONS;
 
-public class PlayerInfoCommand extends Command implements TeXParserAccessor {
+public class PlayerInfoCommand extends Command implements TeXParserAccessor, NotificationsAccessor {
     @Override
     public String getCommandName() {
         return "playerinfo";
@@ -54,21 +55,21 @@ public class PlayerInfoCommand extends Command implements TeXParserAccessor {
         String username = ctx.getArgument("player", String.class);
         if (StringUtils.isBlank(username) || !MinecraftUtils.isValidUsername(username)) {
             ctx.getSource()
-                    .sendError(SeqClient.prefix(Text.translatable("sequoia.command.invalidUsername")));
+                    .sendError(prefixed(Text.translatable("sequoia.command.invalidUsername")));
             return 0;
         } else {
             Services.Player.getPlayerFullResult(username).whenComplete((playerResponse, throwable) -> {
                 if (throwable != null) {
                     SeqClient.error("Error looking up player: " + username, throwable);
                     ctx.getSource()
-                            .sendError(SeqClient.prefix(Text.translatable(
+                            .sendError(prefixed(Text.translatable(
                                     "sequoia.command.playerInfo.errorLookingUpPlayer", username)));
                 } else {
                     if (playerResponse == null
                             || playerResponse.getGlobalData() == null
                             || playerResponse.getGlobalData().getRaids() == null) {
                         ctx.getSource()
-                                .sendError(SeqClient.prefix(Text.translatable(
+                                .sendError(prefixed(Text.translatable(
                                         "sequoia.command.playerRaids.playerNotFound", username)));
                     } else {
                         PlayerResponse.Guild guild = playerResponse.getGuild();
@@ -176,7 +177,7 @@ public class PlayerInfoCommand extends Command implements TeXParserAccessor {
 
                         ctx.getSource()
                                 .sendFeedback(
-                                        SeqClient.prefix(
+                                        prefixed(
                                                 teXParser().parseMutableText(I18n.translate("sequoia.command.playerInfo.showingPlayerInfoIntro",
                                                         playerResponse.getLegacyRankColour() != null ? playerResponse.getLegacyRankColour().getMain().substring(1) : "ffffff", Rank + " ",
                                                         playerResponse.getUsername())

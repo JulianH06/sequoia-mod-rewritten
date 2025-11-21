@@ -13,7 +13,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import static star.sequoia2.client.SeqClient.mc;
 
 public class SimpleProfileFetcher {
-    private static final ConcurrentHashMap<UUID,   CompletableFuture<Optional<GameProfile>>> BY_ID   = new ConcurrentHashMap<>();
+    private static final int MAX_CACHE_ENTRIES = 512;
+    private static final ConcurrentHashMap<UUID, CompletableFuture<Optional<GameProfile>>> BY_ID = new ConcurrentHashMap<>();
+    private static final CompletableFuture<Optional<GameProfile>> EMPTY = CompletableFuture.completedFuture(Optional.empty());
 
     ApiServices services;
 
@@ -24,14 +26,22 @@ public class SimpleProfileFetcher {
     }
 
     public CompletableFuture<Optional<GameProfile>> fetchByUUID(UUID id) {
-        if (mc.getSessionService() == null || id == null) {
-            return CompletableFuture.completedFuture(Optional.empty());
-        }
-        return BY_ID.computeIfAbsent(id, uuid ->
-            CompletableFuture.supplyAsync(() -> {
-                ProfileResult res = services.sessionService().fetchProfile(uuid, true);
-                return Optional.ofNullable(res).map(ProfileResult::profile);
-            }, Util.getMainWorkerExecutor())
-        );
+        if (services == null || mc.getSessionService() == null || id == null)
+            return EMPTY;
+        CompletableFuture<Optional<GameProfile>> future = BY_ID.computeIfAbsent(id, uuid ->
+                CompletableFuture.supplyAsync(() -> {
+                    ProfileResult res = services.sessionService().fetchProfile(uuid, true);
+                    return Optional.ofNullable(res).map(ProfileResult::profile);
+                }, Util.getMainWorkerExecutor())
+                        .whenComplete((profile, throwable) -> trimCache()));
+        return future;
+    }
+
+    private static void trimCache() {
+        if (BY_ID.size() <= MAX_CACHE_ENTRIES) return;
+        BY_ID.keySet().iterator().forEachRemaining(key -> {
+            if (BY_ID.size() <= MAX_CACHE_ENTRIES) return;
+            BY_ID.remove(key);
+        });
     }
 }

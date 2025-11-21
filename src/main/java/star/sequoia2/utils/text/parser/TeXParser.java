@@ -1,11 +1,11 @@
 package star.sequoia2.utils.text.parser;
 
-import com.wynntils.core.text.PartStyle;
-import com.wynntils.core.text.StyledText;
-import com.wynntils.core.text.StyledTextPart;
 import net.minecraft.text.*;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
+import star.sequoia2.client.types.text.PartStyle;
+import star.sequoia2.client.types.text.StyledText;
+import star.sequoia2.client.types.text.StyledTextPart;
 import star.sequoia2.features.impl.Settings;
 
 import java.util.*;
@@ -470,7 +470,7 @@ public class TeXParser implements FeaturesAccessor, TeXParserAccessor {
         // Keep it cheap & deterministic: compare the plain string without MC formatting.
         // (If you need exact formatting fidelity, you can swap this for toTeX(StyledText.fromComponent(t)).)
         try {
-            return com.wynntils.core.text.StyledText.fromComponent(t).getStringWithoutFormatting();
+            return StyledText.fromComponent(t).getStringWithoutFormatting();
         } catch (Throwable e) {
             return String.valueOf(t.getString()); // safe fallback
         }

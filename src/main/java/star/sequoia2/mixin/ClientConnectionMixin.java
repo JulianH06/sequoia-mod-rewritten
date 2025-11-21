@@ -20,11 +20,6 @@ import java.util.Iterator;
 @Mixin(ClientConnection.class)
 public class ClientConnectionMixin implements EventBusAccessor {
 
-    @Inject(method = "handlePacket", at = @At("HEAD"), cancellable = true)
-    private static <T extends PacketListener> void onHandlePacket(Packet<T> packet, PacketListener listener, CallbackInfo ci) {
-        SeqClient.getEventBus().dispatch(new PacketEvent.PacketReceiveEvent(packet), event -> ci.cancel());
-    }
-
     @Inject(at = @At("HEAD"), method = "send(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;)V", cancellable = true)
     private void onSendPacketHead(Packet<?> packet, PacketCallbacks callbacks, CallbackInfo ci) {
         dispatch(new PacketEvent.PacketSendEvent(packet), event -> ci.cancel());
@@ -36,6 +31,8 @@ public class ClientConnectionMixin implements EventBusAccessor {
             for (Iterator<Packet<? super ClientPlayPacketListener>> it = bundle.getPackets().iterator(); it.hasNext(); ) {
                 dispatch(new PacketEvent.PacketReceiveEvent(it.next()), event -> ci.cancel());
             }
-        } else dispatch(new PacketEvent.PacketReceiveEvent(packet), event -> ci.cancel());
+        } else {
+            dispatch(new PacketEvent.PacketReceiveEvent(packet), event -> ci.cancel());
+        }
     }
 }

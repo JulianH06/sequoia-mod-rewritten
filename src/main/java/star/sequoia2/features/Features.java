@@ -87,13 +87,18 @@ public class Features implements EventBusAccessor {
 
     @Subscribe
     private void onMouseKey(MouseButtonEvent event) {
-        if (event.action() == 0 || mc.currentScreen != null
+        if (mc.currentScreen != null
                 || mc.inGameHud.getChatHud().isChatFocused()) {
             return;
         }
         all().forEach(feature -> {
             if (feature instanceof ToggleFeature toggleFeature) {
-                if (toggleFeature.keybind.get().matches(event)) {
+                if (!toggleFeature.keybind.get().matches(event)) {
+                    return;
+                }
+                if (event.action() == GLFW.GLFW_PRESS) {
+                    toggleFeature.toggle();
+                } else if (event.action() == GLFW.GLFW_RELEASE && !toggleFeature.keybind.getToggle()) {
                     toggleFeature.toggle();
                 }
             }

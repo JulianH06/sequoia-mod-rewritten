@@ -11,6 +11,7 @@ import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import star.sequoia2.accessors.FeaturesAccessor;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.services.wynn.guild.GuildResponse;
 import star.sequoia2.client.types.Services;
@@ -32,7 +33,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.lit
 import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.utils.text.TextUtils.padInvisible;
 
-public class CompareCommand extends Command implements FeaturesAccessor {
+public class CompareCommand extends Command implements FeaturesAccessor, NotificationsAccessor {
 
     @Override
     public String getCommandName() {
@@ -74,7 +75,7 @@ public class CompareCommand extends Command implements FeaturesAccessor {
         CompletableFuture.allOf(f1, f2).whenComplete((v, throwable) -> {
             if (throwable != null) {
                 SeqClient.error("Error comparing guilds", throwable);
-                ctx.getSource().sendError(SeqClient.prefix(
+                ctx.getSource().sendError(prefixed(
                         Text.translatable("sequoia.command.compare.error")));
                 return;
             }
@@ -83,7 +84,7 @@ public class CompareCommand extends Command implements FeaturesAccessor {
             GuildResponse g2 = f2.join();
 
             if (g1 == null || g2 == null) {
-                ctx.getSource().sendError(SeqClient.prefix(
+                ctx.getSource().sendError(prefixed(
                         Text.translatable("sequoia.command.compare.guildNotFound",
                                 g1 == null ? g1Name : g2Name)));
                 return;
@@ -171,7 +172,7 @@ public class CompareCommand extends Command implements FeaturesAccessor {
 
         /* ---- assemble & send ------------------------------------------- */
 
-        MutableText out = SeqClient.prefix(Text.translatable("sequoia.command.compare.compareGuild").styled(features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().light()).orElse(style -> style)).append(Text.literal("\n")));
+        MutableText out = prefixed(Text.translatable("sequoia.command.compare.compareGuild").styled(features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().light()).orElse(style -> style)).append(Text.literal("\n"))).copy();
         for (int i = 0; i < rows.size(); i++) {
             out.append(rows.get(i));
             if (i < rows.size() - 1) out.append("\n");

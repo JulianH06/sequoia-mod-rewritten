@@ -1,6 +1,7 @@
 package star.sequoia2.settings.types;
 
 
+import net.minecraft.util.math.MathHelper;
 import star.sequoia2.configuration.JsonCompound;
 
 public class DoubleSetting extends NumberSetting<Double> {
@@ -15,7 +16,8 @@ public class DoubleSetting extends NumberSetting<Double> {
 
     @Override
     public void load(JsonCompound compound) {
-        setInternal(compound.getDouble("value"));
+        double value = compound.getDouble("value");
+        setInternal(MathHelper.clamp(value, min, max));
     }
 
     @Override

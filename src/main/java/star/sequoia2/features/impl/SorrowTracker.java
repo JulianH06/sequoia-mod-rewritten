@@ -89,7 +89,7 @@ public class SorrowTracker extends ToggleFeature implements RenderUtilAccessor, 
         int w = mc.getWindow().getScaledWidth();
         int h = mc.getWindow().getScaledHeight();
         int tw = textRenderer().getWidth(text);
-        int packed = new Color(color.get().getRed(), color.get().getGreen(), color.get().getBlue(), color.get().getAlpha()).getRGB();
+        int packed = color.get().getColorWithAlpha();
 
         float x = (w - tw) / 2f + xOffset.get();
         float y = h / 2f - 4 + yOffset.get();
@@ -133,6 +133,7 @@ public class SorrowTracker extends ToggleFeature implements RenderUtilAccessor, 
                 .add(forwardFlat.multiply(ahead));
 
         Vec3d end = start.add(forward.multiply(20.0));
+        int packedColor = color.get().getColorWithAlpha();
 
         render3DUtil().drawLine(event.matrices(), start, end, color.get(), 4f, true);
 
@@ -140,11 +141,11 @@ public class SorrowTracker extends ToggleFeature implements RenderUtilAccessor, 
         final float baseRadius = 0.1f;
         for (int i = 0; i < ringCount; i++) {
             float phaseOffset = i / (float) ringCount;
-            drawCircle(event, start, end, baseRadius, phaseOffset);
+            drawCircle(event, start, end, baseRadius, phaseOffset, packedColor);
         }
     }
 
-    private void drawCircle(Render3DEvent event, Vec3d start, Vec3d end, float baseRadius, float phaseOffset) {
+    private void drawCircle(Render3DEvent event, Vec3d start, Vec3d end, float baseRadius, float phaseOffset, int packedColor) {
         final float segStart = 0.02f, segEnd = 0.80f;
         final float segLen   = segEnd - segStart;
         final float segMid   = (segStart + segEnd) * 0.5f;
@@ -193,12 +194,10 @@ public class SorrowTracker extends ToggleFeature implements RenderUtilAccessor, 
 
         Matrix4f mat = matrices.peek().getPositionMatrix();
         Vec3d cam = mc.getEntityRenderDispatcher().camera.getPos();
-        int packed = new Color(color.get().getRed(), color.get().getGreen(), color.get().getBlue(), color.get().getAlpha()).getRGB();
-
-        buffer.vertex(mat, (float)(p0.x - cam.x), (float)(p0.y - cam.y), (float)(p0.z - cam.z)).texture(0, 1).color(packed);
-        buffer.vertex(mat, (float)(p1.x - cam.x), (float)(p1.y - cam.y), (float)(p1.z - cam.z)).texture(1, 1).color(packed);
-        buffer.vertex(mat, (float)(p2.x - cam.x), (float)(p2.y - cam.y), (float)(p2.z - cam.z)).texture(1, 0).color(packed);
-        buffer.vertex(mat, (float)(p3.x - cam.x), (float)(p3.y - cam.y), (float)(p3.z - cam.z)).texture(0, 0).color(packed);
+        buffer.vertex(mat, (float)(p0.x - cam.x), (float)(p0.y - cam.y), (float)(p0.z - cam.z)).texture(0, 1).color(packedColor);
+        buffer.vertex(mat, (float)(p1.x - cam.x), (float)(p1.y - cam.y), (float)(p1.z - cam.z)).texture(1, 1).color(packedColor);
+        buffer.vertex(mat, (float)(p2.x - cam.x), (float)(p2.y - cam.y), (float)(p2.z - cam.z)).texture(1, 0).color(packedColor);
+        buffer.vertex(mat, (float)(p3.x - cam.x), (float)(p3.y - cam.y), (float)(p3.z - cam.z)).texture(0, 0).color(packedColor);
 
         matrices.pop();
 

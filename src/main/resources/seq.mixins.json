@@ -13,7 +13,7 @@
     "requireAnnotations": true
   },
   "client": [
-    "ChatHudMixin",
+    "ClientPlayerEntityMixin",
     "InGameHudMixin",
     "KeyboardMixin",
     "LivingEntityRendererMixin",

@@ -1,20 +1,28 @@
 package star.sequoia2.features.impl.ws;
 
 import com.collarmc.pounce.Subscribe;
-import com.wynntils.core.text.StyledText;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.network.packet.s2c.play.ChatMessageS2CPacket;
+import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.text.Text;
+import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.accessors.GuildParserAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
-import star.sequoia2.events.ChatMessageEvent;
+import star.sequoia2.client.types.text.StyledText;
+import star.sequoia2.events.PacketEvent;
+import star.sequoia2.events.WynncraftLoginEvent;
 import star.sequoia2.features.ToggleFeature;
+import star.sequoia2.settings.types.BooleanSetting;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import static star.sequoia2.client.SeqClient.mc;
 
-public class ChatHookFeature extends ToggleFeature implements GuildParserAccessor, TeXParserAccessor {
+public class ChatHookFeature extends ToggleFeature implements GuildParserAccessor, TeXParserAccessor, EventBusAccessor {
 
     public ChatHookFeature() {
         super("ChatHook", "Chat related stuffs (type shi)", true);
@@ -74,31 +82,55 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
     private static final Pattern AUTO_CONNECT =
             Pattern.compile("§6§lWelcome to Wynncraft!");
 
+    private static final int   CACHE_SIZE    = 256;
+    private static final long  DUP_WINDOW_MS = 1000L;
+    private static final long  RECENT_RETENTION_MS = 60_000L;
+
+    private static final Map<Integer, Long> SEQ$RECENT =
+            Collections.synchronizedMap(new LinkedHashMap<Integer, Long>(CACHE_SIZE, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Integer, Long> eldest) {
+                    long now = System.currentTimeMillis();
+                    if (now - eldest.getValue() > RECENT_RETENTION_MS) {
+                        return true;
+                    }
+                    return size() > CACHE_SIZE;
+                }
+            });
+
     @Subscribe
-    public void onChatMessage(ChatMessageEvent event) {
-        Text message = event.message();
-//            "[12:12:02] [Render thread/INFO] (sequoia2) [VERBOSE] [CHAT] §b\uDAFF\uDFFC\uE006\uDAFF\uDFFF\uE002\uDAFF\uDFFE §ebad_and_sad§b, §eMasss§b, §e§owar tank§b, and §e§oTotal Obliteration§b finished §3The Nameless §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Anomaly§b and claimed §32x Aspects§b, §32048x §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Emeralds§b, and §3+10367m Guild Experience\n"
-        StyledText styledText = StyledText.fromComponent(message);
+    public void onChatMessage(PacketEvent.PacketReceiveEvent event) {
+        if (!(event.packet() instanceof GameMessageS2CPacket(Text content, boolean overlay))) return;
+        if (content == null || overlay) return;
+        if (seq$shouldDrop(content)) return;
 
-        String tex = teXParser().toTeX(styledText.stripAlignment());
-
-        SeqClient.debug(tex);
-
-        if (AUTO_CONNECT.matcher(tex).find()) {
+        String raw = content.getString();
+        // Fast-path auto-connect without TeX parsing
+        if (AUTO_CONNECT.matcher(raw).find()) {
             SeqClient.debug("parsing as login...");
-            if (features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.getConnectOnJoin().get()).orElse(false)
-                    && !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
+            dispatch(new WynncraftLoginEvent());
+            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+            boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
+            if (wsFeature.map(WebSocketFeature::getConnectOnJoin).map(BooleanSetting::get).orElse(false)
+                    && !wsAuthenticated
                     && mc.player != null) {
-                mc.player.networkHandler.sendCommand("connect");
+                mc.player.networkHandler.sendCommand("seqconnect");
             }
             return;
         }
 
-        if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)
-                || !features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isAuthenticated).orElse(false)
-                || !features().getIfActive(ChatHookFeature.class).map(ChatHookFeature::isActive).orElse(false)) {
+        Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+        Optional<ChatHookFeature> chatHookFeature = features().getIfActive(ChatHookFeature.class);
+        boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
+        boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
+        boolean hookActive = chatHookFeature.map(ChatHookFeature::isActive).orElse(false);
+
+        if (!wsEnabled || !wsAuthenticated || !hookActive) {
             return;
         }
+
+        StyledText styledText = StyledText.fromComponent(content);
+        String tex = teXParser().toTeX(styledText.stripAlignment());
 
         if ((tex.startsWith(GUILD_CHAT_PREFIX1) || tex.startsWith(GUILD_CHAT_PREFIX2)) &&
                 ((GUILD_CHAT_HOVER.matcher(tex).results().limit(2).count()
@@ -108,8 +140,7 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
             return;
         }
 
-        tex = remove_multiline(tex); // cleaned tex for variable multiline texts like guild raids
-//            Sequoia2.debug(String.format("cleaned tex: %s", tex));
+        tex = remove_multiline(tex);
 
         if (GUILD_RAID_BLOCK.matcher(tex).find() || OTHER_GUILD_RAID_BLOCK.matcher(tex).find()) {
             SeqClient.debug("parsing as guild raid completion...");
@@ -117,20 +148,29 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
         }
     }
 
+    private static String getString(ChatMessageS2CPacket messagePacket) {
+        Text message = messagePacket.unsignedContent();
+//            "[12:12:02] [Render thread/INFO] (sequoia2) [VERBOSE] [CHAT] §b\uDAFF\uDFFC\uE006\uDAFF\uDFFF\uE002\uDAFF\uDFFE §ebad_and_sad§b, §eMasss§b, §e§owar tank§b, and §e§oTotal Obliteration§b finished §3The Nameless §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Anomaly§b and claimed §32x Aspects§b, §32048x §b\uDAFF\uDFFC\uE001\uDB00\uDC06§3 Emeralds§b, and §3+10367m Guild Experience\n"
+//            StyledText styledText = StyledText.fromComponent(message);
+//
+//            String tex = teXParser().toTeX(styledText.stripAlignment());
+//
+
+        String tex = message.toString();
+        return tex;
+    }
+
     private static final Pattern SECTION_CODES =
             Pattern.compile("§[0-9a-fk-or<>]", Pattern.CASE_INSENSITIVE);
-
 
     public static String remove_multiline(String s) {
         if (s == null || s.isEmpty()) return "";
         s = s.replaceAll("§.\uE001§.", "").trim();
-        // strip private codepoints
         StringBuilder out = new StringBuilder(s.length());
         s.codePoints().forEach(cp -> {
             if (Character.getType(cp) != Character.PRIVATE_USE) out.appendCodePoint(cp);
         });
         s = out.toString();
-        // normalize all whitespace (including single \n) to a single space also remove end of line formats
         s = s.replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
         return s;
     }
@@ -142,5 +182,24 @@ public class ChatHookFeature extends ToggleFeature implements GuildParserAccesso
     public static String clean(String s) {
         if (s == null || s.isEmpty()) return "";
         return remove_formatting(remove_multiline(s));
+    }
+
+    private static int seq$keyFrom(Text msg) {
+        String s = msg.getString().replaceAll("\\s+", " ").trim();
+        return s.hashCode();
+    }
+
+    private static boolean seq$shouldDrop(Text msg) {
+        long now = System.currentTimeMillis();
+        int key = seq$keyFrom(msg);
+        synchronized (SEQ$RECENT) {
+            SEQ$RECENT.entrySet().removeIf(entry -> now - entry.getValue() > RECENT_RETENTION_MS);
+            Long last = SEQ$RECENT.get(key);
+            if (last != null && (now - last) <= DUP_WINDOW_MS) {
+                return true;
+            }
+            SEQ$RECENT.put(key, now);
+        }
+        return false;
     }
 }

@@ -1,0 +1,53 @@
+name: Nightly Build and Post JAR
+
+on:
+  push:
+    branches:
+      - nightly
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Rename JAR to Seq-nightly.jar
+        run: |
+          JAR_FILE=$(find build/libs -name "*.jar")
+          echo "Renaming $JAR_FILE to Seq-nightly.jar"
+          mv $JAR_FILE build/libs/Seq-nightly.jar
+
+      - name: Upload JAR to Discord
+        run: |
+          echo "Uploading Seq-nightly.jar to Discord"
+          curl -X POST -H "Content-Type: multipart/form-data" \
+            -F "file=@build/libs/Seq-nightly.jar" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Create/Update GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: nightly
+          name: Nightly Build
+          body: "Latest nightly build from commit ${{ github.sha }}"
+          prerelease: true
+          files: build/libs/Seq-nightly.jar
