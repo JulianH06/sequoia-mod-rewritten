@@ -14,8 +14,8 @@ import static star.sequoia2.client.SeqClient.mc;
 
 @Getter @Setter
 public class SearchBarComponent extends RelativeComponent implements TextRendererAccessor, RenderUtilAccessor {
-    private boolean searching = false;
-    private String search = "";
+    protected boolean searching = false;
+    protected String search = "";
 
     public SearchBarComponent() {
         super("SearchBarComponent");

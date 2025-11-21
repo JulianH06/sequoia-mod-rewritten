@@ -75,14 +75,16 @@ public class PartyFinder extends Feature {
     public static class Party {
         public String owner;
         public List<String> partyMembers;
+        public int memberCap;
 
-        public Party(List<String> partyMembers) {
+        public Party(List<String> partyMembers, int memberCap) {
             this.partyMembers = partyMembers;
             this.owner = partyMembers.getFirst();
+            this.memberCap = memberCap;
         }
     }
 
-    private void notifyWS(WSMessageType, PartyChangeEvents, )
+    //private void notifyWS(WSMessageType, PartyChangeEvents, )
 
     private enum PartyChangeEvents {
         PartyChangeEventCreated,

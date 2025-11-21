@@ -1,8 +1,6 @@
 package star.sequoia2.gui.component;
 
 import com.mojang.logging.LogUtils;
-import com.wynntils.utils.render.type.HorizontalAlignment;
-import com.wynntils.utils.render.type.VerticalAlignment;
 import lombok.Getter;
 import mil.nga.color.Color;
 import net.minecraft.client.gui.DrawContext;
@@ -12,8 +10,6 @@ import star.sequoia2.accessors.ConfigurationAccessor;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.accessors.RenderUtilAccessor;
 import star.sequoia2.accessors.SettingsAccessor;
-import star.sequoia2.features.Feature;
-import star.sequoia2.features.ToggleFeature;
 import star.sequoia2.features.impl.PartyFinder;
 import star.sequoia2.features.impl.Settings;
 import star.sequoia2.gui.categories.RelativeComponent;
@@ -24,32 +20,26 @@ import star.sequoia2.gui.screen.GuiRoot;
 import star.sequoia2.settings.Setting;
 import star.sequoia2.settings.types.*;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class PartyButton extends RelativeComponent implements SettingsAccessor, FeaturesAccessor, RenderUtilAccessor, ConfigurationAccessor{
+public class PartyCreateButton extends RelativeComponent implements SettingsAccessor, FeaturesAccessor, RenderUtilAccessor, ConfigurationAccessor {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private final PartyFinder.Party party;
     private List<SettingComponent<?>> settingComponents = new CopyOnWriteArrayList<>();
     @Getter
     private boolean open = false;
 
     public int extraHeight = 0;
 
-    public PartyButton(PartyFinder.Party party) {
-        super(party.owner + "'s Party");
-        this.party = party;
-        settingComponents = createComponents(party);
+    public PartyCreateButton() {
+        super("Create a party");
+        settingComponents = createComponents();
     }
 
-    private List<SettingComponent<?>> createComponents(PartyFinder.Party party) {
+    private List<SettingComponent<?>> createComponents() {
         List<SettingComponent<?>> components = new CopyOnWriteArrayList<>();
-//        for (Setting<?> setting : settingsState().fromFeature(feature).all().toList()) {
-//            addSettingsComponents(components, setting);
-//        }
         return components;
     }
 
@@ -106,17 +96,13 @@ public class PartyButton extends RelativeComponent implements SettingsAccessor, 
 //        if (feature instanceof ToggleFeature toggleModule) {
 //            textColor = toggleModule.isActive() ? accent2.getColor() : light.getColor();
 //        } else {
-            textColor = light.getColor();
+        textColor = light.getColor();
 //        }
 //        if (feature instanceof ToggleFeature toggleModule && toggleModule.isActive()) {
 //            render2DUtil().drawGlow(context, 0,0, textRenderer().getWidth(toggleModule.name), textRenderer().fontHeight, new Color(accent2.getRed(), accent2.getGreen(), accent2.getBlue(), 0.4f), textRenderer().fontHeight / 2f);
 //        }
 
-        renderText(context, party.owner + "'s party", 0, 0, textColor, true);
-        int amountWidth = textRenderer().getWidth(party.partyMembers.size() + "/" + party.memberCap);
-        renderText(context, party.partyMembers.size() + "/" + party.memberCap, 265 - amountWidth, 0, textColor, true);
-
-        List<String> testMembers = List.of("SHDGKFJLHJ", "HGKsfhfshhshfhJASD" , "WHAT THE_ FLIP!!=?", "meowmeowmeow", "seqwawa", "AvoOnConns", "abcdefghijklmnopqrstuvwxyz");
+        List<String> testMembers = List.of("SHDGKFJLHJ", "HGKsfhfshhshfhJASD" , "WHAT THE_ FLIP!!=?", "gazmeowmeowmeow", "seqwawa", "AvoOnConns", "abcdefghijklmnopqrstuvwxyz");
 
         List<List<String>> memberLines = new ArrayList<>();
         List<String> currentLine = new ArrayList<>();
@@ -147,17 +133,8 @@ public class PartyButton extends RelativeComponent implements SettingsAccessor, 
 
         //System.out.println(memberLines);
 
-        int i = 1;
-        for(List<String> line : memberLines) {
-            renderText(context, String.valueOf(line).replace("[", "").replace("]", "") + (i != memberLines.size() ? "," : ""), 0, 13 * i, textColor, true);
-            i++;
-        }
-        if(i > 1) {
-            extraHeight = (i - 2) * 14;
-        }
 
-        renderText(context, "Click to join", 133 - textRenderer().getWidth("Click to join") / 2f, 15 * i, bgStart.getColor(), true);
-
+        renderText(context, PartyFinderCategory.isCreatingParty ? "Go back" : "Create a party", PartyFinderCategory.isCreatingParty ? 20 : 1, -2, textColor, true);
 
         context.getMatrices().pop();
 
@@ -180,6 +157,7 @@ public class PartyButton extends RelativeComponent implements SettingsAccessor, 
         }
     }
 
+
     private float getCurrentBottom() {
         float base = contentY() + contentHeight();
         if (!open) return base;
@@ -198,7 +176,13 @@ public class PartyButton extends RelativeComponent implements SettingsAccessor, 
     @Override
     public void mouseClicked(float mouseX, float mouseY, int button) {
         if (isWithinContent(mouseX, mouseY)) {
-            System.out.println("*joined party*");
+            PartyFinderCategory.isCreatingParty = !PartyFinderCategory.isCreatingParty;
+        }
+
+        if (open) {
+            for (SettingComponent<?> comp : this.settingComponents) {
+                comp.mouseClicked(mouseX, mouseY, button);
+            }
         }
     }
 
