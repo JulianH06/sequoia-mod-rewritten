@@ -1,10 +1,12 @@
 package star.sequoia2.settings;
 
 import com.google.common.base.MoreObjects;
+import lombok.Getter;
 import star.sequoia2.accessors.EventBusAccessor;
 import star.sequoia2.configuration.JsonCompound;
 import star.sequoia2.events.SettingChanged;
-import lombok.Getter;
+
+import java.util.Objects;
 
 public abstract class Setting<T> implements EventBusAccessor, Named {
     public static final String NAME = "name";
@@ -34,7 +36,8 @@ public abstract class Setting<T> implements EventBusAccessor, Named {
     }
 
     public T set(T value) {
-        if (!value.equals(defaultValue) || !this.value.equals(value)) {
+        // null-safe comparison
+        if (!Objects.equals(value, defaultValue) || !Objects.equals(this.value, value)) {
             this.value = value;
             onChange();
         }
@@ -46,7 +49,7 @@ public abstract class Setting<T> implements EventBusAccessor, Named {
     }
 
     public T reset() {
-        if (!this.defaultValue.equals(this.value)) {
+        if (!Objects.equals(this.defaultValue, this.value)) {
             this.value = this.defaultValue;
             onChange();
         }
@@ -58,7 +61,7 @@ public abstract class Setting<T> implements EventBusAccessor, Named {
     }
 
     public boolean isDefaultValue() {
-        return get().equals(defaultValue);
+        return Objects.equals(get(), defaultValue);
     }
 
     public abstract void load(JsonCompound json);

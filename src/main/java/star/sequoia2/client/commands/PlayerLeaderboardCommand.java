@@ -8,6 +8,7 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.StringUtils;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.accessors.TeXParserAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.Services;
@@ -22,7 +23,7 @@ import static com.mojang.brigadier.arguments.StringArgumentType.word;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
-public class PlayerLeaderboardCommand extends Command implements TeXParserAccessor {
+public class PlayerLeaderboardCommand extends Command implements TeXParserAccessor, NotificationsAccessor {
     @Override
     public String getCommandName() {
         return "leaderboard";
@@ -52,26 +53,26 @@ public class PlayerLeaderboardCommand extends Command implements TeXParserAccess
         String username = ctx.getArgument("player", String.class);
         if (StringUtils.isBlank(username) || !MinecraftUtils.isValidUsername(username)) {
             ctx.getSource()
-                    .sendError(SeqClient.prefix(Text.translatable("sequoia.command.invalidUsername")));
+                    .sendError(prefixed(Text.translatable("sequoia.command.invalidUsername")));
             return 0;
         } else {
             Services.Player.getPlayer(username).whenComplete((playerResponse, throwable) -> {
                 if (throwable != null) {
                     SeqClient.error("Error looking up player: " + username, throwable);
                     ctx.getSource()
-                            .sendError(SeqClient.prefix(Text.translatable(
+                            .sendError(prefixed(Text.translatable(
                                     "sequoia.command.playerLeaderboard.errorLookingUpPlayer", username)));
                 } else {
                     if (playerResponse == null
                             || playerResponse.getGlobalData() == null
                             || playerResponse.getGlobalData().getRaids() == null) {
                         ctx.getSource()
-                                .sendError(SeqClient.prefix(Text.translatable(
+                                .sendError(prefixed(Text.translatable(
                                         "sequoia.command.playerLeaderboard.playerNotFound", username)));
                     } else {
                         ctx.getSource()
                                 .sendFeedback(
-                                        SeqClient.prefix(
+                                        prefixed(
                                                 teXParser().parseMutableText(I18n.translate("sequoia.command.playerLeaderboard.showingPlayerLeaderboard", playerResponse.getUsername(), results))
                                                         .append(playerResponse.rankingPrettyMessage(playerResponse.getRanking(), results))
                                         )

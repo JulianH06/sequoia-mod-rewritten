@@ -8,6 +8,7 @@ import star.sequoia2.events.ModuleChangedEvent;
 import star.sequoia2.events.SettingChanged;
 import star.sequoia2.features.Feature;
 import star.sequoia2.features.Features;
+import star.sequoia2.client.SeqClient;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -39,6 +40,7 @@ public class SettingsState implements ConfigurationAccessor {
 
     public void load(Features features) {
         JsonArray settingsList = configuration().getFeatures().getList("settings");
+        if (settingsList == null) return;
         settingsList.forEach(jsonElement -> {
             JsonCompound json = JsonCompound.wrap(jsonElement);
             String clazz = json.getString("class");
@@ -49,21 +51,25 @@ public class SettingsState implements ConfigurationAccessor {
         });
     }
 
-    private void save() {
-        try {
-            JsonArray array = new JsonArray();
-            featureSettings.forEach((module, settings) -> {
-                JsonCompound moduleJson = module.toJSON();
-                array.add(moduleJson);
-            });
+    private final Object saveLock = new Object();
 
-            configuration().getFeatures().put("settings", array);
-            configuration().save();
-        } catch (IOException e) {
-            throw new IllegalStateException("could not save configuration");
+    private void save() {
+        synchronized (saveLock) {
+            try {
+                JsonArray array = new JsonArray();
+                featureSettings.forEach((module, settings) -> {
+                    JsonCompound moduleJson = module.toJSON();
+                    array.add(moduleJson);
+                });
+                configuration().getFeatures().put("settings", array);
+                configuration().save();
+            } catch (IOException e) {
+                SeqClient.warn("could not save configuration", e);
+            } catch (RuntimeException e) {
+                SeqClient.warn("unexpected error during configuration save", e);
+            }
         }
     }
-
 
     @Subscribe
     private void onModuleChanged(ModuleChangedEvent ignored) {

@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import star.sequoia2.accessors.FeaturesAccessor;
+import star.sequoia2.accessors.NotificationsAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.services.wynn.guild.GuildResponse;
 import star.sequoia2.client.types.Services;
@@ -23,7 +24,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.arg
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 @Deprecated
-public class OnlineMembersCommand extends Command implements FeaturesAccessor {
+public class OnlineMembersCommand extends Command implements FeaturesAccessor, NotificationsAccessor {
     @Override
     public String getCommandName() {
         return "members";
@@ -54,7 +55,7 @@ public class OnlineMembersCommand extends Command implements FeaturesAccessor {
         Services.Guild.getGuild(query).whenComplete((g, t) -> {
             if (t != null) {
                 SeqClient.error("Error looking up guild " + query, t);
-                ctx.getSource().sendError(SeqClient.prefix(Text.translatable(
+                ctx.getSource().sendError(prefixed(Text.translatable(
                         "sequoia.command.onlineMembers.errorLookingUpGuildMembers", query)));
                 return;
             }
@@ -62,10 +63,10 @@ public class OnlineMembersCommand extends Command implements FeaturesAccessor {
                 GuildCache.canonicalName(raw).ifPresentOrElse(
                         canon -> Services.Guild.getGuild(canon).whenComplete((g2, t2) -> {
                             if (g2 != null) showGuild(ctx, g2);
-                            else ctx.getSource().sendError(SeqClient.prefix(
+                            else ctx.getSource().sendError(prefixed(
                                     Text.translatable("sequoia.command.onlineMembers.guildNotFound", raw)));
                         }),
-                        () -> ctx.getSource().sendError(SeqClient.prefix(
+                        () -> ctx.getSource().sendError(prefixed(
                                 Text.translatable("sequoia.command.onlineMembers.guildNotFound", raw)))
                 );
             } else {
@@ -77,7 +78,7 @@ public class OnlineMembersCommand extends Command implements FeaturesAccessor {
 
     private void showGuild(CommandContext<FabricClientCommandSource> ctx, GuildResponse g) {
         ctx.getSource().sendFeedback(
-                SeqClient.prefix(
+                prefixed(
                         Text.literal(g.getName()).styled(features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().accent1()).orElse(style -> style))
                                 .append(Text.literal(" [").styled(features().get(Settings.class).map(settings -> settings.getTheme().get().getTheme().light()).orElse(style -> style)))
                                 .append(Text.literal(g.getPrefix()).styled(s -> {return s.withColor(Models.Guild.getColor(g.getName()).asInt());}))

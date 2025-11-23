@@ -1,15 +1,17 @@
 package star.sequoia2.utils.chatparser;
 
-import com.wynntils.utils.mc.McUtils;
 import star.sequoia2.accessors.FeaturesAccessor;
 import star.sequoia2.client.SeqClient;
 import star.sequoia2.client.types.ws.message.ws.GChatMessageWSMessage;
+import star.sequoia2.features.impl.ws.ChatHookFeature;
 import star.sequoia2.features.impl.ws.WebSocketFeature;
 import star.sequoia2.utils.TimeUtils;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static star.sequoia2.client.SeqClient.mc;
 import static star.sequoia2.features.impl.ws.ChatHookFeature.clean;
 import static star.sequoia2.utils.cache.SequoiaMemberCache.isSequoiaMember;
 
@@ -30,6 +32,11 @@ public class GuildMessageParser implements FeaturesAccessor {
     public void parseGuildMessage(String tex) {
         try {
             String username = null, nickname = null, guildMsg = null;
+            Optional<WebSocketFeature> wsFeature = features().getIfActive(WebSocketFeature.class);
+            Optional<ChatHookFeature> chatFeature = features().getIfActive(ChatHookFeature.class);
+            boolean wsEnabled = wsFeature.map(WebSocketFeature::isActive).orElse(false);
+            boolean wsAuthenticated = wsFeature.map(WebSocketFeature::isAuthenticated).orElse(false);
+            boolean chatEnabled = chatFeature.map(ChatHookFeature::isActive).orElse(false);
 
             Matcher mh = GUILD_CHAT_HOVER.matcher(tex);
             if (mh.find()) {
@@ -68,7 +75,9 @@ public class GuildMessageParser implements FeaturesAccessor {
 //            Sequoia2.debug(String.format("[GUILD CHAT] %s%s: %s", username, nickname != null ? nickname : "", guildMsg));
             if (guildMsg.contains("  ")) return;
             if (username.isBlank() || guildMsg.isBlank()) return;
-            if (!features().getIfActive(WebSocketFeature.class).map(WebSocketFeature::isActive).orElse(false)) return;
+            if (!wsEnabled) return;
+            if (!wsAuthenticated) return;
+            if (!chatEnabled) return;
 
             GChatMessageWSMessage payload = new GChatMessageWSMessage(
                     new GChatMessageWSMessage.Data(
@@ -76,7 +85,7 @@ public class GuildMessageParser implements FeaturesAccessor {
                             nickname,
                             guildMsg,
                             TimeUtils.wsTimestamp(),
-                            McUtils.playerName()
+                            mc.player.getName().getString()
                     )
             );
             features().getIfActive(WebSocketFeature.class).map(webSocketFeature -> webSocketFeature.sendMessage(payload));

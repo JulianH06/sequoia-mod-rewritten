@@ -27,12 +27,14 @@ public class TextUtils {
 
         // --- bold blanks (5 px each) ---
         if (bold > 0) {
-            out.append("§l").append(" ".repeat(bold)).append("§r");
+            out.append("§l");
+            appendSpaces(out, bold);
+            out.append("§r");
         }
 
         // --- normal blanks (4 px each) ---
         if (regular > 0) {
-            out.append(" ".repeat(regular));
+            appendSpaces(out, regular);
         }
 
         return out.toString();
@@ -41,6 +43,12 @@ public class TextUtils {
 
     public static String upperfirst(String text) {
         return text.substring(0,1).toUpperCase(Locale.ROOT) + text.substring(1).toLowerCase(Locale.ROOT);
+    }
+
+    private static void appendSpaces(StringBuilder builder, int count) {
+        for (int i = 0; i < count; i++) {
+            builder.append(' ');
+        }
     }
 
 }

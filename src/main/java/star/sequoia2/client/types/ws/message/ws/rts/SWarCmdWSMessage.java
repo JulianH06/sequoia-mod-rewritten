@@ -8,7 +8,7 @@ import static star.sequoia2.client.types.ws.WSConstants.GSON;
 
 public class SWarCmdWSMessage extends WSMessage {
     public SWarCmdWSMessage(JsonElement data) {
-        super(WSMessageType.S_MESSAGE.getValue(), data);
+        super(WSMessageType.S_WAR_CMD.getValue(), data);
     }
 
     public Data getSWarCmdData() {
@@ -24,15 +24,17 @@ public class SWarCmdWSMessage extends WSMessage {
         //		  4 : opted out
         //		  5 : Team created
         //		  6 : team dropped
-        //		  7 : MEOW MEOW MEOW
+        //		  7 : teamdata
+        //		  8 : war error no role or sum shit
         String commandFrom,
-        String teamData,
+        String team,
         int[] coords,
-        int switchTo
+        int role,
         //      0 : null
         //		1 : tank
         //		2 : dps
         //		3 : emotional support
         //		4 : cat
+        String error
     ){}
 }
