@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class PartyCreateButton extends RelativeComponent implements SettingsAccessor, FeaturesAccessor, RenderUtilAccessor, ConfigurationAccessor {
+public class PartyFinderSwitchButton extends RelativeComponent implements SettingsAccessor, FeaturesAccessor, RenderUtilAccessor, ConfigurationAccessor {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private List<SettingComponent<?>> settingComponents = new CopyOnWriteArrayList<>();
@@ -31,7 +31,7 @@ public class PartyCreateButton extends RelativeComponent implements SettingsAcce
 
     public int extraHeight = 0;
 
-    public PartyCreateButton() {
+    public PartyFinderSwitchButton() {
         super("Create a party");
         settingComponents = createComponents();
     }
@@ -66,7 +66,7 @@ public class PartyCreateButton extends RelativeComponent implements SettingsAcce
         context.getMatrices().translate(left + root.pad, top + textRenderer().fontHeight, 0);
         context.getMatrices().scale(1.1f, 1.1f, 0);
 
-        renderText(context, "Create party", 7, -2, light.getColor(), true);
+        renderText(context, PartyFinderCategory.isCreatingParty ? "Go back" : "Create a party", PartyFinderCategory.isCreatingParty ? 20 : 1, -2, light.getColor(), true);
 
         context.getMatrices().pop();
 
@@ -80,6 +80,7 @@ public class PartyCreateButton extends RelativeComponent implements SettingsAcce
             }
         }
     }
+
 
     private float getCurrentBottom() {
         float base = contentY() + contentHeight();
@@ -99,15 +100,7 @@ public class PartyCreateButton extends RelativeComponent implements SettingsAcce
     @Override
     public void mouseClicked(float mouseX, float mouseY, int button) {
         if (isWithinContent(mouseX, mouseY)) {
-            if(PartyFinderCategory.partyNameInputComponent.search.isEmpty()) {
-                System.out.println("Enter a name first.");
-                //needs to be sent to the client
-                return;
-            }
-            System.out.println("*created party*");
-            PartyFinderCategory.partyNameInputComponent.search = "";
-            PartyFinderCategory.partyNameInputComponent.searching = false;
-            PartyFinderCategory.isCreatingParty = false;
+            PartyFinderCategory.isCreatingParty = !PartyFinderCategory.isCreatingParty;
         }
     }
 
@@ -165,4 +158,3 @@ public class PartyCreateButton extends RelativeComponent implements SettingsAcce
         }
     }
 }
-

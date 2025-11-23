@@ -92,4 +92,8 @@ public class SearchBarComponent extends RelativeComponent implements TextRendere
             search += chr;
         }
     }
+
+    public String getSearch() {
+        return search;
+    }
 }

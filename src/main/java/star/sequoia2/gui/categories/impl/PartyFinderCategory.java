@@ -1,29 +1,33 @@
 package star.sequoia2.gui.categories.impl;
 
-import com.wynntils.utils.colors.CustomColor;
 import mil.nga.color.Color;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.glfw.GLFW;
 import star.sequoia2.accessors.RenderUtilAccessor;
-import star.sequoia2.client.types.Services;
+import star.sequoia2.configuration.JsonCompound;
 import star.sequoia2.features.impl.PartyFinder;
 import star.sequoia2.features.impl.Settings;
 import star.sequoia2.gui.categories.RelativeComponent;
-import star.sequoia2.gui.component.ModuleButton;
 import star.sequoia2.gui.component.PartyButton;
 import star.sequoia2.gui.component.PartyCreateButton;
+import star.sequoia2.gui.component.PartyFinderSwitchButton;
 import star.sequoia2.gui.component.SearchBarComponent;
+import star.sequoia2.gui.component.settings.impl.SliderComponent;
 import star.sequoia2.gui.screen.GuiRoot;
+import star.sequoia2.settings.types.IntSetting;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class PartyFinderCategory extends RelativeComponent implements RenderUtilAccessor {
-    SearchBarComponent searchBarComponent;
+    public static SearchBarComponent searchBarComponent;
+    public static SearchBarComponent partyNameInputComponent;
+    SliderComponent capacitySlider;
 
     PartyFinder.Party dummyParty = new PartyFinder.Party(List.of("Player 1", "Player 2", "Player 3"), 4);
     private final List<PartyButton> partyButtons = new ArrayList<>();
+    private final PartyFinderSwitchButton partyFinderSwitchButton = new PartyFinderSwitchButton();
     private final PartyCreateButton partyCreateButton = new PartyCreateButton();
     public static boolean isCreatingParty = false;
     private float scrollOffset = 0f;
@@ -69,9 +73,72 @@ public class PartyFinderCategory extends RelativeComponent implements RenderUtil
                 context.disableScissor();
             }
         };
+
+        partyNameInputComponent = new SearchBarComponent() {
+            @Override
+            public void render(DrawContext context, float mouseX, float mouseY, float delta) {
+                int textColor = 0xFFFFFFFF;
+                String display;
+                GuiRoot root = getGuiRoot();
+                float left = contentX();
+                float top = contentY();
+                float right = left + contentWidth();
+                float bottom = top + contentHeight();
+
+                Color bgStart = features().get(Settings.class).map(Settings::getThemeNormal).orElse(Color.black());
+                Color dark = features().get(Settings.class).map(Settings::getThemeDark).orElse(Color.black());
+                Color light = features().get(Settings.class).map(Settings::getThemeLight).orElse(Color.black());
+                Color accent1 = features().get(Settings.class).map(Settings::getThemeAccent1).orElse(Color.black());
+                Color accent2 = features().get(Settings.class).map(Settings::getThemeAccent2).orElse(Color.black());
+                Color accent3 = features().get(Settings.class).map(Settings::getThemeAccent3).orElse(Color.black());
+
+                Color bgEnd = accent1;
+                render2DUtil().roundGradientFilled(context.getMatrices(), left, top, right, bottom, root.rounding, bgEnd, accent1, true);
+
+                //this is the box for the max player slider, i was too lazy to add it there
+                render2DUtil().roundGradientFilled(context.getMatrices(), left, top + 35, right, bottom + 35, root.rounding, bgEnd, accent1, true);
+
+                context.enableScissor((int) left, (int) top, (int) right, (int) bottom);
+
+                boolean showCaret = searching && ((System.currentTimeMillis() / 500L) % 2L == 0L);
+
+                if (searching) {
+                    display = search.isEmpty() ? "" : search;
+                    features().get(Settings.class).map(Settings::getClickGui).orElseThrow().setCloseOnEscape(false);
+                } else {
+                    display = "§8Enter a name";
+                    features().get(Settings.class).map(Settings::getClickGui).orElseThrow().setCloseOnEscape(true);
+                }
+
+                float scale = 1.5f;
+
+                context.getMatrices().push();
+                context.getMatrices().translate(contentX() + (contentWidth() / 2) - (textRenderer().getWidth(display)), contentY() + (contentHeight() / 2) - textRenderer().fontHeight, 0);
+                context.getMatrices().scale(scale, scale, 1.0f);
+
+                render2DUtil().drawText(context, display + (showCaret ? "_" : ""), 0, 2, textColor, true);
+
+                context.getMatrices().pop();
+
+                context.disableScissor();
+            }
+        };
+
+        capacitySlider = new SliderComponent<>(new IntSetting(-1, "Max players", "", 4, 4, 2, 10) {
+            @Override
+            public void load(JsonCompound json) {
+
+            }
+
+            @Override
+            protected JsonCompound toJson(JsonCompound json) {
+                return null;
+            }
+        });
+
         isCreatingParty = false;
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 4; i++) {
             partyButtons.add(new PartyButton(dummyParty));
         }
     }
@@ -94,14 +161,15 @@ public class PartyFinderCategory extends RelativeComponent implements RenderUtil
         searchBarComponent.setPos(left, top);
         searchBarComponent.setDimensions(contentWidth() - 25f - 90, getGuiRoot().btnH);
 
-        float x = left;
-        float y = top + getGuiRoot().btnH + 6f;
-        float line = textRenderer().fontHeight + 4f;
+        if(PartyFinderCategory.isCreatingParty) {
+            partyNameInputComponent.render(context, mouseX, mouseY, delta);
+            capacitySlider.render(context, mouseX, mouseY, delta);
+        }
+        partyNameInputComponent.setPos(left, top + 40);
+        partyNameInputComponent.setDimensions(contentWidth(), getGuiRoot().btnH);
+        capacitySlider.setPos(left + 5, top + 82);
+        capacitySlider.setDimensions(contentWidth() - 10, getGuiRoot().btnH);
 
-//        for (int i = 0; i < 3; i++) {
-//            render2DUtil().drawText(context, "Party " + i, x, y, CustomColor.fromHexString("FFFFFF").asInt(), true);
-//            y += line;
-//        }
         GuiRoot root = getGuiRoot();
         float trackPad = 6f;
         float trackW = 2f;
@@ -131,6 +199,11 @@ public class PartyFinderCategory extends RelativeComponent implements RenderUtil
         if(!isCreatingParty) {
             float drawOffset = 0f;
             for (PartyButton button : partyButtons) {
+                if(!PartyFinderCategory.searchBarComponent.getSearch().isEmpty()) {
+                    if(!button.name.contains(PartyFinderCategory.searchBarComponent.getSearch())) {
+                        continue;
+                    }
+                }
                 float itemH = root.btnH * 2 + button.extraHeight + 25;
                 float yy = viewportY + drawOffset - scrollOffset + root.btnGap;
                 button.setPos(left, yy);
@@ -147,17 +220,17 @@ public class PartyFinderCategory extends RelativeComponent implements RenderUtil
 
         context.disableScissor();
 
-        {
-            float itemH = root.btnH * 2;
-            float yy = viewportY - scrollOffset + root.btnGap;
-            partyCreateButton.setPos(left + width - 95 - 8, top);
-            partyCreateButton.setDimensions(95, getGuiRoot().btnH);
-            partyCreateButton.render(context, mouseX, mouseY, delta);
-        }
+        partyCreateButton.setPos(left + (width - 95) / 2, top + 110);
+        partyCreateButton.setDimensions(95, getGuiRoot().btnH);
+        if(isCreatingParty) partyCreateButton.render(context, mouseX, mouseY, delta);
+
+        partyFinderSwitchButton.setPos(left + width - 95 - 8, top);
+        partyFinderSwitchButton.setDimensions(95, getGuiRoot().btnH);
+        partyFinderSwitchButton.render(context, mouseX, mouseY, delta);
 
         matrices.pop();
 
-        if (totalContent > viewportH && trackH > 0f) {
+        if (totalContent > viewportH && trackH > 0f && !isCreatingParty) {
             float thumbH = 20f;
             float available = Math.max(0f, trackH - thumbH);
             float thumbY = trackY + (maxOffset == 0 ? 0 : (scrollOffset / maxOffset) * available);
@@ -209,12 +282,16 @@ public class PartyFinderCategory extends RelativeComponent implements RenderUtil
             }
         }
 
-        partyCreateButton.mouseClicked(mouseX, mouseY, button);
+        partyFinderSwitchButton.mouseClicked(mouseX, mouseY, button);
         if(!PartyFinderCategory.isCreatingParty) {
             searchBarComponent.mouseClicked(mouseX, mouseY, button);
             for (PartyButton partyButton : partyButtons) {
                 partyButton.mouseClicked(mouseX, mouseY, button);
             }
+        } else {
+            partyNameInputComponent.mouseClicked(mouseX, mouseY, button);
+            capacitySlider.mouseClicked(mouseX, mouseY, button);
+            partyCreateButton.mouseClicked(mouseX, mouseY, button);
         }
         float left = contentX();
         float top = contentY();
@@ -222,6 +299,11 @@ public class PartyFinderCategory extends RelativeComponent implements RenderUtil
         if (isWithin(mouseX, mouseY, right - 25f, top, 25, getGuiRoot().btnH) && searchBarComponent.isSearching()) {
             searchBarComponent.setSearching(false);
             searchBarComponent.setSearch("");
+        }
+
+        if (isWithin(mouseX, mouseY, right - 25f, top, 25, getGuiRoot().btnH) && partyNameInputComponent.isSearching()) {
+            partyNameInputComponent.setSearching(false);
+            partyNameInputComponent.setSearch("");
         }
     }
 
@@ -260,6 +342,7 @@ public class PartyFinderCategory extends RelativeComponent implements RenderUtil
 
     @Override
     public void mouseReleased(float mouseX, float mouseY, int button) {
+        capacitySlider.mouseReleased(mouseX, mouseY, button);
         if (button == 0) draggingScrollbar = false;
     }
 
@@ -270,11 +353,16 @@ public class PartyFinderCategory extends RelativeComponent implements RenderUtil
             searchBarComponent.setSearching(false);
             searchBarComponent.setSearch("");
         }
+
+        partyNameInputComponent.keyPressed(keyCode, scanCode, modifiers);
+        capacitySlider.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
     public void charTyped(char chr, int modifiers) {
         searchBarComponent.charTyped(chr, modifiers);
+        partyNameInputComponent.charTyped(chr, modifiers);
+        capacitySlider.charTyped(chr, modifiers);
     }
 
     @Override

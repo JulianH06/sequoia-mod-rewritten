@@ -40,7 +40,7 @@ public class PartyButton extends RelativeComponent implements SettingsAccessor, 
     public int extraHeight = 0;
 
     public PartyButton(PartyFinder.Party party) {
-        super(party.owner + "'s Party");
+        super(Math.random() * 1000 + "'s Party");
         this.party = party;
         settingComponents = createComponents(party);
     }
@@ -103,16 +103,10 @@ public class PartyButton extends RelativeComponent implements SettingsAccessor, 
 
 
         int textColor;
-//        if (feature instanceof ToggleFeature toggleModule) {
-//            textColor = toggleModule.isActive() ? accent2.getColor() : light.getColor();
-//        } else {
             textColor = light.getColor();
 //        }
-//        if (feature instanceof ToggleFeature toggleModule && toggleModule.isActive()) {
-//            render2DUtil().drawGlow(context, 0,0, textRenderer().getWidth(toggleModule.name), textRenderer().fontHeight, new Color(accent2.getRed(), accent2.getGreen(), accent2.getBlue(), 0.4f), textRenderer().fontHeight / 2f);
-//        }
 
-        renderText(context, party.owner + "'s party", 0, 0, textColor, true);
+        renderText(context, name, 0, 0, textColor, true);
         int amountWidth = textRenderer().getWidth(party.partyMembers.size() + "/" + party.memberCap);
         renderText(context, party.partyMembers.size() + "/" + party.memberCap, 265 - amountWidth, 0, textColor, true);
 
